@@ -1,0 +1,41 @@
+{
+  "titel": "Custom-Sourcing — Komponenten nach Spezifikation",
+  "titel_en": "Custom sourcing — components to specification",
+  "kategorie": "sonderloesungen",
+  "kurzbeschreibung": "Strukturierte Beschaffung industrieller Komponenten aus dem WTS-Lieferantennetzwerk. Von Anforderungsklärung bis EU-konforme Lieferung.",
+  "kurzbeschreibung_en": "Structured sourcing of industrial components from the WTS supplier network. From requirement analysis to EU-compliant delivery.",
+  "beschreibung": "Kein Standard-Bauteil, das passt? Wir suchen, qualifizieren und liefern Komponenten, die nicht im Katalog stehen — über unser europäisches und globales Netzwerk. Inklusive Dual-Sourcing-Strategie, Qualitätsprüfung beim Lieferanten und EU-konformer Dokumentation. Typische Sourcing-Felder: Industrie-Sensorik, Spezial-Heizelemente, Sicherheitsbauteile, Steuerungselektronik, OEM-Komponenten mit IP-Schutz.",
+  "beschreibung_en": "No standard part fits? We find, qualify and supply components beyond the catalogue — through our European and global network. Including dual-sourcing strategy, quality assurance at the supplier and EU-compliant documentation. Typical sourcing fields: industrial sensors, specialty heaters, safety components, control electronics, OEM components with IP protection.",
+  "herkunftsregion": "global",
+  "specs": [
+    { "label": "Schritt 1", "value": "Anforderungsanalyse & technische Klärung", "label_en": "Step 1", "value_en": "Requirement analysis & technical clarification", "group": "prozess" },
+    { "label": "Schritt 2", "value": "Lieferantenauswahl mit Dual-Sourcing-Option", "label_en": "Step 2", "value_en": "Supplier selection with dual-sourcing option", "group": "prozess" },
+    { "label": "Schritt 3", "value": "Beschaffung & Qualitätssicherung", "label_en": "Step 3", "value_en": "Procurement & quality assurance", "group": "prozess" },
+    { "label": "Schritt 4", "value": "Logistik & Zollabwicklung", "label_en": "Step 4", "value_en": "Logistics & customs handling", "group": "prozess" },
+    { "label": "Schritt 5", "value": "EU-konforme Dokumentation & Lieferung", "label_en": "Step 5", "value_en": "EU-compliant documentation & delivery", "group": "prozess" },
+    { "label": "Lieferantenregionen", "value": "Europa, Asien (inkl. China), USA", "label_en": "Supplier regions", "value_en": "Europe, Asia (incl. China), USA", "group": "geografie" },
+    { "label": "Lieferzeit", "value": "ab 3 Wochen bei bestehenden Quellen, 6–14 Wochen für neue Sourcing-Projekte", "label_en": "Lead time", "value_en": "from 3 weeks with existing sources, 6–14 weeks for new projects", "group": "kommerziell" },
+    { "label": "Mindestumfang", "value": "Projektbezogen, kein fester MOQ-Standard", "label_en": "Minimum scope", "value_en": "Project-based, no fixed MOQ standard", "group": "kommerziell" }
+  ],
+  "tags": ["custom-sourcing", "dual-sourcing", "oem", "global-supply-chain"],
+  "anwendungen": [
+    "Versorgung mit Spezial-Komponenten in Serienfertigung",
+    "Ersatzteilbeschaffung für ältere Anlagen",
+    "Beschaffung baumustergeprüfter Sicherheitsbauteile",
+    "Markenneutrales Sourcing für OEM-Hersteller"
+  ],
+  "anwendungen_en": [
+    "Supply of specialty components in serial production",
+    "Spare parts sourcing for legacy equipment",
+    "Sourcing of type-approved safety components",
+    "Brand-neutral sourcing for OEM manufacturers"
+  ],
+  "branchen": ["industrie", "maschinenbau", "automotive", "labor", "lebensmittel"],
+  "lieferzeit": "projektabhängig",
+  "lieferzeit_en": "project-dependent",
+  "verfuegbarkeit": "auf_anfrage",
+  "featured": true,
+  "sortPriority": 5,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

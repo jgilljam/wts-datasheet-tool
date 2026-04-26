@@ -1,0 +1,42 @@
+{
+  "titel": "Heizfolie selbstklebend, 12 V / 24 V",
+  "titel_en": "Self-adhesive heating foil, 12 V / 24 V",
+  "kategorie": "heizelemente",
+  "kurzbeschreibung": "Flache Polyimid-Heizfolie zum Aufkleben auf glatte Oberflächen. Geräte- und Schaltschrank-Beheizung, Tau- und Vereisungsschutz.",
+  "kurzbeschreibung_en": "Flat polyimide heating foil for adhesion to smooth surfaces. Used for device and cabinet heating, condensation and icing protection.",
+  "beschreibung": "Robuste Heizfolie aus Polyimid (Kapton) mit selbstklebender Rückseite. Wird flächig auf metallische oder glatte Oberflächen aufgebracht. Typische Einsatzgebiete: Frostschutz für Sensoren, Kondensationsverhinderung in Schaltschränken, Geräte-Anwärmung in Außenanlagen.",
+  "beschreibung_en": "Robust polyimide (Kapton) heating foil with self-adhesive back. Applied flat to metallic or smooth surfaces. Typical uses: frost protection for sensors, anti-condensation in control cabinets, device pre-warming in outdoor enclosures.",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Spannung", "value": "12 V DC / 24 V DC", "label_en": "Voltage", "value_en": "12 V DC / 24 V DC", "group": "elektrisch" },
+    { "label": "Leistung", "value": "5 – 100 W (auf Anfrage)", "label_en": "Power", "value_en": "5 – 100 W (on request)", "group": "elektrisch" },
+    { "label": "Temperaturbereich", "value": "−40 °C bis +200 °C", "label_en": "Temperature range", "value_en": "−40 °C to +200 °C", "group": "umgebung" },
+    { "label": "Material", "value": "Polyimid (Kapton)", "label_en": "Material", "value_en": "Polyimide (Kapton)", "group": "konstruktion" },
+    { "label": "Klebeschicht", "value": "Acrylat, dauerhaft", "label_en": "Adhesive", "value_en": "Acrylic, permanent", "group": "konstruktion" },
+    { "label": "Schutzart", "value": "IP54 mit Anschlussbox", "label_en": "Protection class", "value_en": "IP54 with terminal box", "group": "umgebung" },
+    { "label": "Standardgrößen", "value": "50×50, 100×100, 200×100 mm", "label_en": "Standard sizes", "value_en": "50×50, 100×100, 200×100 mm", "group": "abmessungen" },
+    { "label": "Sondergrößen", "value": "auf Zeichnung", "label_en": "Custom sizes", "value_en": "to drawing", "group": "abmessungen" }
+  ],
+  "tags": ["polyimid", "kapton", "selbstklebend", "schaltschrank", "frostschutz", "kondensation"],
+  "anwendungen": [
+    "Frostschutz für Außenanlagen-Sensorik",
+    "Kondensationsverhinderung in Schaltschränken",
+    "Geräte-Anwärmung in der Kältetechnik",
+    "Tauwasserschutz an Sichtfenstern und Linsen"
+  ],
+  "anwendungen_en": [
+    "Frost protection for outdoor sensors",
+    "Anti-condensation in control cabinets",
+    "Device pre-heating in refrigeration",
+    "Anti-fogging on viewing windows and lenses"
+  ],
+  "branchen": ["hvac", "industrie", "automotive"],
+  "lieferzeit": "ab Lager bei Standardgröße, 4–6 Wochen für Sonderausführung",
+  "lieferzeit_en": "from stock for standard size, 4–6 weeks for custom",
+  "verfuegbarkeit": "lager",
+  "temperaturbereich": "−40 °C bis +200 °C",
+  "featured": true,
+  "sortPriority": 10,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

@@ -1,0 +1,41 @@
+{
+  "titel": "Heizkabel selbstregelnd, Frostschutz",
+  "titel_en": "Self-regulating heating cable, frost protection",
+  "kategorie": "heizelemente",
+  "kurzbeschreibung": "Selbstregelndes Heizkabel mit PTC-Charakteristik. Begleitheizung von Rohrleitungen, Tauwasserablässen und Frostschutzanwendungen.",
+  "kurzbeschreibung_en": "Self-regulating heating cable with PTC characteristic. Trace heating for pipelines, condensate drains and frost protection.",
+  "beschreibung": "Heizkabel mit halbleitender Polymermatrix, die bei steigender Temperatur den Widerstand erhöht und so die Leistung lokal reduziert. Eigensichere Begleitheizung — kein zusätzlicher Thermostat nötig.",
+  "beschreibung_en": "Heating cable with semi-conductive polymer matrix that increases resistance with rising temperature, reducing power locally. Inherently safe trace heating — no additional thermostat required.",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Nennspannung", "value": "230 V AC", "label_en": "Nominal voltage", "value_en": "230 V AC", "group": "elektrisch" },
+    { "label": "Leistung 10 °C", "value": "10 / 17 / 26 / 33 W/m", "label_en": "Power at 10 °C", "value_en": "10 / 17 / 26 / 33 W/m", "group": "elektrisch" },
+    { "label": "Maximale Anwendungstemperatur", "value": "+65 °C (eingeschaltet)", "label_en": "Max application temp", "value_en": "+65 °C (energised)", "group": "thermisch" },
+    { "label": "Maximale Erhalttemperatur", "value": "+85 °C (ausgeschaltet)", "label_en": "Max exposure temp", "value_en": "+85 °C (de-energised)", "group": "thermisch" },
+    { "label": "Mindest-Verlegetemperatur", "value": "−40 °C", "label_en": "Min installation temp", "value_en": "−40 °C", "group": "thermisch" },
+    { "label": "Außenmantel", "value": "Polyolefin, UV-beständig", "label_en": "Outer jacket", "value_en": "Polyolefin, UV-resistant", "group": "konstruktion" },
+    { "label": "Schutzart", "value": "IPX7 mit Anschlussgarnitur", "label_en": "Protection class", "value_en": "IPX7 with termination kit", "group": "konstruktion" },
+    { "label": "Lieferform", "value": "Meterware, Sätze mit fertiger Anschlussgarnitur", "label_en": "Delivery form", "value_en": "Per metre or assembled with termination kit", "group": "konstruktion" }
+  ],
+  "tags": ["selbstregelnd", "ptc", "begleitheizung", "frostschutz", "rohrleitung", "tauwasser"],
+  "anwendungen": [
+    "Frostschutz von Wasser- und Prozessleitungen",
+    "Tauwasserablässe in Kühl- und Tiefkühlanlagen",
+    "Dachrinnen- und Fallrohrbeheizung",
+    "Begleitheizung von Behältern und Armaturen"
+  ],
+  "anwendungen_en": [
+    "Frost protection for water and process lines",
+    "Condensate drains in refrigeration and freezer systems",
+    "Roof gutter and downpipe heating",
+    "Trace heating for tanks and valves"
+  ],
+  "branchen": ["hvac", "industrie", "lebensmittel"],
+  "lieferzeit": "ab Lager (Meterware), 2 Wochen für konfektionierte Sätze",
+  "lieferzeit_en": "from stock (per metre), 2 weeks for assembled sets",
+  "verfuegbarkeit": "lager",
+  "temperaturbereich": "−40 °C bis +85 °C",
+  "sortPriority": 30,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

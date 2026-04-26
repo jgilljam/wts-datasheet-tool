@@ -1,0 +1,42 @@
+{
+  "titel": "Bimetall-Thermoschalter",
+  "titel_en": "Bimetal thermal switch",
+  "kategorie": "schalter",
+  "kurzbeschreibung": "Bimetall-Schaltkontakt zur Temperaturüberwachung an Motoren, Heizgeräten und Trafos. Selbsthaltend bis manuell rückstellend, je nach Variante.",
+  "kurzbeschreibung_en": "Bimetal switching contact for temperature monitoring on motors, heaters and transformers. Self-resetting to manually resettable, depending on variant.",
+  "beschreibung": "Mechanisch schaltender Bimetall-Thermoschalter mit Schnappkontakt. Lieferung als Öffner oder Schließer, mit definierten Schalttemperaturen von +30 °C bis +220 °C. Standardgehäuse aus Aluminium oder Messing, Anschluss als Flachstecker, Litze oder Schraubklemme.",
+  "beschreibung_en": "Mechanically switching bimetal thermostat with snap-action contact. Available as normally-closed or normally-open, with defined switching temperatures from +30 °C to +220 °C. Standard housing in aluminium or brass, termination as spade, lead or screw terminal.",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Kontakt", "value": "NC oder NO, Schnappkontakt", "label_en": "Contact", "value_en": "NC or NO, snap-action", "group": "elektrisch" },
+    { "label": "Schaltleistung", "value": "10 A bei 250 V AC (resistiv)", "label_en": "Switching capacity", "value_en": "10 A at 250 V AC (resistive)", "group": "elektrisch" },
+    { "label": "Schalttemperatur", "value": "+30 °C bis +220 °C in 5 K-Schritten", "label_en": "Switching temperature", "value_en": "+30 °C to +220 °C in 5 K steps", "group": "thermisch" },
+    { "label": "Schalttoleranz", "value": "±5 K, optional ±3 K", "label_en": "Switching tolerance", "value_en": "±5 K, optional ±3 K", "group": "thermisch" },
+    { "label": "Hysterese", "value": "10 – 20 K typisch", "label_en": "Hysteresis", "value_en": "10 – 20 K typical", "group": "thermisch" },
+    { "label": "Gehäuse", "value": "Aluminium / Messing vernickelt", "label_en": "Housing", "value_en": "Aluminium / nickel-plated brass", "group": "konstruktion" },
+    { "label": "Anschluss", "value": "Flachstecker 6,3 mm / Litze / Schraubklemme", "label_en": "Termination", "value_en": "Spade 6.3 mm / lead / screw terminal", "group": "konstruktion" },
+    { "label": "Lebensdauer", "value": "≥ 100.000 Schaltspiele", "label_en": "Life expectancy", "value_en": "≥ 100,000 switching cycles", "group": "qualitaet" }
+  ],
+  "tags": ["bimetall", "thermoschalter", "snap-action", "motor", "trafo", "heizgeraet"],
+  "anwendungen": [
+    "Wicklungsschutz an Elektromotoren",
+    "Übertemperaturschalter an Heizgeräten",
+    "Temperaturwächter in Trafos",
+    "Lüfterzuschaltung in Schaltschränken"
+  ],
+  "anwendungen_en": [
+    "Winding protection on electric motors",
+    "Over-temperature switching on heating devices",
+    "Temperature monitoring in transformers",
+    "Fan activation in control cabinets"
+  ],
+  "branchen": ["industrie", "maschinenbau", "automotive"],
+  "lieferzeit": "ab Lager bei Standardtemperaturen, 4–6 Wochen für Sonderausführung",
+  "lieferzeit_en": "from stock for standard temperatures, 4–6 weeks for custom",
+  "verfuegbarkeit": "lager",
+  "temperaturbereich": "+30 °C bis +220 °C",
+  "featured": true,
+  "sortPriority": 10,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

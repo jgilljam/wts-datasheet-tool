@@ -1,0 +1,44 @@
+{
+  "titel": "Rohrheizkörper Edelstahl, industriell",
+  "titel_en": "Tubular heater stainless steel, industrial",
+  "kategorie": "heizelemente",
+  "kurzbeschreibung": "Mantelheizkörper aus Edelstahl 1.4541 / 1.4571 für Flüssigkeits- und Lufterwärmung. Konfektioniert nach Anschluss, Länge und Leistung.",
+  "kurzbeschreibung_en": "Sheathed tubular heater in stainless steel 1.4541 / 1.4571 for liquid and air heating. Configured by termination, length and power.",
+  "beschreibung": "Hochwertige Rohrheizkörper für industrielle Beheizung von Flüssigkeiten, Gasen und Luft. Lieferung nach kundenspezifischer Geometrie — gerade, U-Form, Spirale oder freie Biegung. Alle Standardanschlüsse verfügbar.",
+  "beschreibung_en": "High-quality tubular heaters for industrial heating of liquids, gases and air. Supplied to customer geometry — straight, U-shaped, spiral or free bend. All standard terminations available.",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Spannung", "value": "230 V / 400 V / Sonderausführung", "label_en": "Voltage", "value_en": "230 V / 400 V / custom", "group": "elektrisch" },
+    { "label": "Leistung", "value": "100 W – 30 kW", "label_en": "Power", "value_en": "100 W – 30 kW", "group": "elektrisch" },
+    { "label": "Mantel-Werkstoff", "value": "Edelstahl 1.4541 / 1.4571 / Incoloy 800", "label_en": "Sheath material", "value_en": "Stainless 1.4541 / 1.4571 / Incoloy 800", "group": "konstruktion" },
+    { "label": "Mantelrohr-Ø", "value": "6,5 / 8,5 / 11 / 16 mm", "label_en": "Sheath diameter", "value_en": "6.5 / 8.5 / 11 / 16 mm", "group": "abmessungen" },
+    { "label": "Heizleiterlänge", "value": "100 – 4500 mm", "label_en": "Heating length", "value_en": "100 – 4500 mm", "group": "abmessungen" },
+    { "label": "Anschluss", "value": "Schraubgewinde, Flansch, Schweißmuffe, Litze", "label_en": "Termination", "value_en": "Threaded, flanged, weld socket, lead wires", "group": "konstruktion" },
+    { "label": "Oberflächenbelastung", "value": "max. 12 W/cm²", "label_en": "Surface load", "value_en": "max. 12 W/cm²", "group": "thermisch" },
+    { "label": "Temperaturbereich", "value": "bis 750 °C Manteltemperatur", "label_en": "Temperature range", "value_en": "up to 750 °C sheath temperature", "group": "thermisch" }
+  ],
+  "tags": ["mantelheizkoerper", "edelstahl", "industriell", "konfektioniert", "fluessigkeit", "luft"],
+  "anwendungen": [
+    "Wasser- und Ölbeheizung in Tanks",
+    "Lufterhitzer-Register",
+    "Prozessgas-Erwärmung",
+    "Frostschutz von Rohrleitungen",
+    "Aufschmelzen von Bitumen, Wachsen, Klebstoffen"
+  ],
+  "anwendungen_en": [
+    "Water and oil heating in tanks",
+    "Air heater banks",
+    "Process gas pre-heating",
+    "Pipeline frost protection",
+    "Melting of bitumen, waxes, adhesives"
+  ],
+  "branchen": ["industrie", "maschinenbau", "hvac", "lebensmittel"],
+  "lieferzeit": "6–10 Wochen je nach Konfiguration",
+  "lieferzeit_en": "6–10 weeks depending on configuration",
+  "verfuegbarkeit": "auf_anfrage",
+  "temperaturbereich": "bis 750 °C Manteltemperatur",
+  "featured": true,
+  "sortPriority": 20,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

@@ -1,0 +1,41 @@
+{
+  "titel": "Multikanal-Sensorfeld, kundenspezifisch",
+  "titel_en": "Multi-channel sensor array, customer-specific",
+  "kategorie": "sonderloesungen",
+  "kurzbeschreibung": "Konfektionierte Sensoreinheit mit mehreren PT1000- oder NTC-Fühlern auf gemeinsamer Trägerleitung. Für Lager-, Klimaschrank- und Anlagenmonitoring.",
+  "kurzbeschreibung_en": "Assembled sensor unit with multiple PT1000 or NTC probes on a shared trunk cable. For warehouse, climate chamber and plant monitoring.",
+  "beschreibung": "Bündelung mehrerer Temperaturmesspunkte zu einer Steckverbindung. Reduziert Verkabelungsaufwand in Anlagen mit zonenweiser Erfassung. Wir konfektionieren nach Anzahl der Fühler, Abstand, Hülsenausführung und Steckersystem (M12, RJ45 mit T-Adapter, Sub-D).",
+  "beschreibung_en": "Bundling of multiple temperature measurement points into one connector. Reduces wiring effort in zone-wise monitoring systems. Configured by number of probes, spacing, sleeve type and connector system (M12, RJ45 with T-adapter, sub-D).",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Sensortyp", "value": "PT1000 Klasse B / NTC 10 kΩ / Mischbestückung möglich", "label_en": "Sensor type", "value_en": "PT1000 class B / NTC 10 kΩ / mixed possible", "group": "elektrisch" },
+    { "label": "Anzahl Fühler", "value": "2 – 24 pro Trägerleitung", "label_en": "Number of probes", "value_en": "2 – 24 per trunk", "group": "konfiguration" },
+    { "label": "Fühlerabstand", "value": "frei konfigurierbar, ab 50 mm", "label_en": "Probe spacing", "value_en": "freely configurable, from 50 mm", "group": "konfiguration" },
+    { "label": "Trägerleitung", "value": "Mehradriges Silikon- oder PUR-Kabel", "label_en": "Trunk cable", "value_en": "Multi-core silicone or PUR cable", "group": "konstruktion" },
+    { "label": "Anschluss", "value": "M12, M8, RJ45 mit T-Adapter, Sub-D, Litze", "label_en": "Termination", "value_en": "M12, M8, RJ45 with T-adapter, sub-D, leads", "group": "konstruktion" },
+    { "label": "Temperaturbereich", "value": "−40 °C bis +180 °C (kabelabhängig)", "label_en": "Temperature range", "value_en": "−40 °C to +180 °C (cable-dependent)", "group": "thermisch" },
+    { "label": "Schutzart", "value": "IP67 mit Vergussende", "label_en": "Protection class", "value_en": "IP67 with potted end", "group": "umgebung" },
+    { "label": "Mindestmenge", "value": "ab 10 Stück", "label_en": "MOQ", "value_en": "from 10 pieces", "group": "kommerziell" }
+  ],
+  "tags": ["multikanal", "sensorfeld", "konfektioniert", "monitoring", "custom"],
+  "anwendungen": [
+    "Zonenmonitoring in Kühlzellen und Lagern",
+    "Mehrpunktmessung in Klimaschränken",
+    "Temperaturprofil in Wärmebehandlungsanlagen",
+    "Prozessüberwachung in der Lebensmittelproduktion"
+  ],
+  "anwendungen_en": [
+    "Zone monitoring in cold rooms and warehouses",
+    "Multi-point measurement in climate chambers",
+    "Temperature profiling in heat-treatment lines",
+    "Process monitoring in food production"
+  ],
+  "branchen": ["lebensmittel", "industrie", "labor"],
+  "lieferzeit": "4–6 Wochen je nach Konfiguration",
+  "lieferzeit_en": "4–6 weeks depending on configuration",
+  "verfuegbarkeit": "auf_anfrage",
+  "mindestmenge": 10,
+  "sortPriority": 20,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

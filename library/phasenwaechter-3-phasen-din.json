@@ -1,0 +1,49 @@
+{
+  "titel": "Phasenwächter 3-phasig, DIN-Schiene",
+  "titel_en": "Phase monitor, 3-phase, DIN rail",
+  "kategorie": "schalter",
+  "kurzbeschreibung": "Dreiphasen-Überwachungsrelais zur Detektion von Phasenausfall, Phasenfolge und Phasenasymmetrie. Schützt Drehstrommotoren und Steuerungen.",
+  "kurzbeschreibung_en": "Three-phase monitoring relay for detection of phase loss, phase sequence and phase asymmetry. Protects three-phase motors and control systems.",
+  "beschreibung": "Kompaktes Schutzrelais im DIN-Modulgehäuse zur lückenlosen Überwachung dreiphasiger Stromnetze. Erkennt Phasenausfall, falsche Phasenfolge und unzulässige Asymmetrie zwischen den Phasen und schaltet das nachgelagerte Schütz oder die Steuerung ab. Typische Einsatzgebiete: Schaltschränke für Kühlanlagen, Lüftungsanlagen, Pumpenstationen, Kompressoren und alle Anwendungen mit Drehstrommotoren, bei denen ein Phasenfehler zu Schäden an Wicklungen oder Lagern führen kann.",
+  "beschreibung_en": "Compact protection relay in DIN modular housing for continuous monitoring of three-phase power supply. Detects phase loss, incorrect phase sequence and excessive asymmetry between phases, then trips the downstream contactor or controller. Typical applications: control cabinets for refrigeration, ventilation, pump stations, compressors and any application with three-phase motors where a phase fault could damage windings or bearings.",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Versorgungsspannung", "value": "230 V AC, 400 V AC", "label_en": "Supply voltage", "value_en": "230 V AC, 400 V AC", "group": "elektrisch" },
+    { "label": "Frequenz", "value": "50 / 60 Hz", "label_en": "Frequency", "value_en": "50 / 60 Hz", "group": "elektrisch" },
+    { "label": "Überwachungsfunktionen", "value": "Phasenausfall, Phasenfolge, Phasenasymmetrie", "label_en": "Monitored faults", "value_en": "Phase loss, phase sequence, phase asymmetry", "group": "funktion" },
+    { "label": "Asymmetrie-Schwelle", "value": "einstellbar 5–25 %", "label_en": "Asymmetry threshold", "value_en": "adjustable 5–25 %", "group": "funktion" },
+    { "label": "Ausgang", "value": "Wechslerkontakt (SPDT), 8 A / 250 V AC", "label_en": "Output", "value_en": "SPDT relay, 8 A / 250 V AC", "group": "elektrisch" },
+    { "label": "Bauform", "value": "Modul DIN, 35 mm Hutschienenmontage", "label_en": "Mounting", "value_en": "DIN module, 35 mm rail mount", "group": "konstruktion" },
+    { "label": "Modulbreite", "value": "1 TE (17,5 mm)", "label_en": "Module width", "value_en": "1 unit (17.5 mm)", "group": "abmessungen" },
+    { "label": "Schutzart Klemmen", "value": "IP20", "label_en": "Protection class terminals", "value_en": "IP20", "group": "umgebung" },
+    { "label": "Umgebungstemperatur", "value": "−20 °C bis +60 °C", "label_en": "Operating temperature", "value_en": "−20 °C to +60 °C", "group": "umgebung" },
+    { "label": "Status-LEDs", "value": "Versorgung, Relais, Fehler", "label_en": "Status LEDs", "value_en": "Power, relay, fault", "group": "funktion" }
+  ],
+  "bilder": [
+    { "src": "/komponenten/phasenwaechter-3-phasen-din.jpg", "alt": "Phasenwächter 3-phasig auf DIN-Schiene", "alt_en": "3-phase monitor on DIN rail" }
+  ],
+  "tags": ["phasenausfall", "phasenfolge", "asymmetrie", "drehstrom", "schaltschrank", "din-schiene", "schutzrelais"],
+  "anwendungen": [
+    "Schaltschrankschutz für Kälte- und Klimaanlagen",
+    "Drehstrommotor-Schutz an Verdichtern und Pumpen",
+    "Lüftungs- und Klimatisierungssysteme",
+    "Schutz vor Falschanschluss bei Wartungsarbeiten",
+    "Industrielle Anlagen mit hohem Wicklungsschaden-Risiko"
+  ],
+  "anwendungen_en": [
+    "Control cabinet protection for refrigeration and HVAC systems",
+    "Three-phase motor protection on compressors and pumps",
+    "Ventilation and air-conditioning systems",
+    "Protection against wiring faults during maintenance",
+    "Industrial systems with high winding damage risk"
+  ],
+  "branchen": ["hvac", "industrie", "kaeltetechnik", "automatisierung"],
+  "lieferzeit": "ab Lager, alternative Bauformen 2–3 Wochen",
+  "lieferzeit_en": "from stock, alternative versions 2–3 weeks",
+  "verfuegbarkeit": "lager",
+  "temperaturbereich": "−20 °C bis +60 °C",
+  "featured": false,
+  "sortPriority": 50,
+  "publishedAt": "2026-04-26",
+  "updatedAt": "2026-04-26"
+}

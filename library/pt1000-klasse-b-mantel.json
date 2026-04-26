@@ -1,0 +1,45 @@
+{
+  "titel": "PT1000 Klasse B, Mantelausführung",
+  "titel_en": "PT1000 class B, mineral-insulated probe",
+  "kategorie": "sensoren",
+  "kurzbeschreibung": "Mineralisolierter PT1000-Mantelfühler in Edelstahl. 4-Leiter optional. Für Industrie- und Laboranwendungen mit hoher Genauigkeit.",
+  "kurzbeschreibung_en": "Mineral-insulated PT1000 sheath probe in stainless steel. 4-wire optional. For industrial and laboratory use with high accuracy.",
+  "beschreibung": "Robuster Platin-Mantelfühler für Mess- und Regelaufgaben. Lieferung in 2-, 3- oder 4-Leiter-Schaltung. Mantelmaterial 1.4571 als Standard, andere Werkstoffe und Längen auf Anfrage.",
+  "beschreibung_en": "Rugged platinum sheath probe for measurement and control. 2-, 3- or 4-wire connection. Sheath material 1.4571 as standard, other materials and lengths on request.",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Nennwiderstand", "value": "1000 Ω bei 0 °C", "label_en": "Nominal resistance", "value_en": "1000 Ω at 0 °C", "group": "elektrisch" },
+    { "label": "Genauigkeitsklasse", "value": "B nach IEC 60751 (±0,3 °C bei 0 °C)", "label_en": "Accuracy class", "value_en": "B per IEC 60751 (±0.3 °C at 0 °C)", "group": "elektrisch" },
+    { "label": "Schaltung", "value": "2-, 3- oder 4-Leiter", "label_en": "Wiring", "value_en": "2-, 3- or 4-wire", "group": "elektrisch" },
+    { "label": "Temperaturbereich", "value": "−50 °C bis +500 °C", "label_en": "Temperature range", "value_en": "−50 °C to +500 °C", "group": "thermisch" },
+    { "label": "Mantelwerkstoff", "value": "Edelstahl 1.4571 (Standard) / Inconel optional", "label_en": "Sheath material", "value_en": "Stainless 1.4571 (std) / Inconel optional", "group": "konstruktion" },
+    { "label": "Mantel-Ø", "value": "3,0 / 4,5 / 6,0 mm", "label_en": "Sheath diameter", "value_en": "3.0 / 4.5 / 6.0 mm", "group": "abmessungen" },
+    { "label": "Mantellänge", "value": "50 – 1500 mm", "label_en": "Sheath length", "value_en": "50 – 1500 mm", "group": "abmessungen" },
+    { "label": "Anschluss", "value": "Anschlusskopf B/J, Litzen mit Stecker, fester Kabelausgang", "label_en": "Termination", "value_en": "Head B/J, leads with plug, fixed cable", "group": "konstruktion" },
+    { "label": "Vibrationsfest", "value": "ja (mineralisoliert)", "label_en": "Vibration-resistant", "value_en": "yes (mineral-insulated)", "group": "umgebung" }
+  ],
+  "bilder": [
+    { "src": "/komponenten/pt1000-klasse-b-mantel.jpg", "alt": "Pt1000 Mantelfühler mit Stecker", "alt_en": "Pt1000 jacketed sensor with connector" }
+  ],
+  "tags": ["pt1000", "platin", "mantelfuehler", "4-leiter", "praezision"],
+  "anwendungen": [
+    "Prozesstemperatur in Reaktoren und Kesseln",
+    "Hochgenaue Regelung in Klimaschränken",
+    "Wärmeübergabestation und Fernwärme",
+    "Prüfstand-Messketten in Automotive R&D"
+  ],
+  "anwendungen_en": [
+    "Process temperature in reactors and boilers",
+    "High-accuracy control in climate chambers",
+    "Heat transfer stations and district heating",
+    "Test bench measurement in automotive R&D"
+  ],
+  "branchen": ["industrie", "maschinenbau", "labor", "automotive"],
+  "lieferzeit": "2–4 Wochen",
+  "lieferzeit_en": "2–4 weeks",
+  "verfuegbarkeit": "kurzfristig",
+  "temperaturbereich": "−50 °C bis +500 °C",
+  "sortPriority": 20,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

@@ -1,0 +1,43 @@
+{
+  "titel": "Mica-Bandheizung für Extruder",
+  "titel_en": "Mica band heater for extruders",
+  "kategorie": "heizelemente",
+  "kurzbeschreibung": "Mica-isolierte Bandheizung zur Beheizung zylindrischer Werkzeuge — Extruder, Spritzgießzylinder, Reaktoren. Enge Toleranzen, hohe Lebensdauer.",
+  "kurzbeschreibung_en": "Mica-insulated band heater for heating cylindrical tools — extruders, injection moulding barrels, reactors. Tight tolerances, long service life.",
+  "beschreibung": "Hochwertige Bandheizung mit Glimmerisolation und Edelstahlmantel. Wahlweise mit ein- oder zweiseitigem Anschluss, Klemmkasten, Litzenausgang oder Stecker. Konfektionierung nach Innendurchmesser und Bandbreite.",
+  "beschreibung_en": "Premium band heater with mica insulation and stainless steel sheath. Optional one- or two-side termination, terminal box, lead-out wires or plug. Configured by inner diameter and band width.",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Spannung", "value": "230 V / 400 V / Sonderausführung", "label_en": "Voltage", "value_en": "230 V / 400 V / custom", "group": "elektrisch" },
+    { "label": "Leistungsdichte", "value": "max. 6 W/cm²", "label_en": "Power density", "value_en": "max. 6 W/cm²", "group": "thermisch" },
+    { "label": "Innendurchmesser", "value": "30 – 800 mm", "label_en": "Inner diameter", "value_en": "30 – 800 mm", "group": "abmessungen" },
+    { "label": "Bandbreite", "value": "20 – 250 mm", "label_en": "Band width", "value_en": "20 – 250 mm", "group": "abmessungen" },
+    { "label": "Schließsystem", "value": "Schnellverschluss / Verschraubung", "label_en": "Closure", "value_en": "Quick-release / screw clamp", "group": "konstruktion" },
+    { "label": "Mantel-Werkstoff", "value": "Edelstahl 1.4301", "label_en": "Sheath material", "value_en": "Stainless 1.4301", "group": "konstruktion" },
+    { "label": "Anschluss", "value": "Klemmkasten / Litzen / Stecker", "label_en": "Termination", "value_en": "Terminal box / leads / plug", "group": "konstruktion" },
+    { "label": "Maximale Manteltemperatur", "value": "+450 °C", "label_en": "Max sheath temperature", "value_en": "+450 °C", "group": "thermisch" }
+  ],
+  "tags": ["bandheizung", "mica", "glimmer", "extruder", "spritzguss", "zylinder"],
+  "anwendungen": [
+    "Extruder-Zylinderbeheizung in der Kunststoffverarbeitung",
+    "Spritzgießmaschinen-Heißzonen",
+    "Heißkanalsysteme",
+    "Reaktor- und Behälterbeheizung",
+    "Schmelzlinien für Wachs, Schokolade, Bitumen"
+  ],
+  "anwendungen_en": [
+    "Extruder barrel heating in plastics processing",
+    "Injection moulding hot zones",
+    "Hot runner systems",
+    "Reactor and vessel heating",
+    "Melt lines for wax, chocolate, bitumen"
+  ],
+  "branchen": ["industrie", "maschinenbau", "lebensmittel"],
+  "lieferzeit": "4–8 Wochen je nach Konfiguration",
+  "lieferzeit_en": "4–8 weeks depending on configuration",
+  "verfuegbarkeit": "auf_anfrage",
+  "temperaturbereich": "bis +450 °C Manteltemperatur",
+  "sortPriority": 40,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

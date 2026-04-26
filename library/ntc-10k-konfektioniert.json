@@ -1,0 +1,45 @@
+{
+  "titel": "NTC 10 kΩ konfektioniert",
+  "titel_en": "NTC 10 kΩ, assembled",
+  "kategorie": "sensoren",
+  "kurzbeschreibung": "NTC-Temperaturfühler 10 kΩ bei 25 °C, B = 3977. Mit Hülse und Anschlussleitung nach Kundenvorgabe konfektioniert.",
+  "kurzbeschreibung_en": "NTC temperature probe 10 kΩ at 25 °C, B = 3977. Configured with sleeve and lead to customer specification.",
+  "beschreibung": "Standard-Kühltechnik-NTC für die Erfassung von Verdampfer-, Lager- und Vorlauftemperaturen. Wir konfektionieren nach Hülsenmaterial, Länge, Leitung, Anschluss (Litzen, Klemme, Stecker) und mechanischer Befestigung.",
+  "beschreibung_en": "Standard refrigeration NTC for evaporator, ambient and supply temperatures. Configured by sleeve material, length, lead, termination (leads, terminal, plug) and mechanical fixing.",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Nennwiderstand", "value": "10 kΩ ± 1 % bei 25 °C", "label_en": "Nominal resistance", "value_en": "10 kΩ ±1 % at 25 °C", "group": "elektrisch" },
+    { "label": "B-Wert (25/85)", "value": "3977 K ± 0,75 %", "label_en": "B-value (25/85)", "value_en": "3977 K ± 0.75 %", "group": "elektrisch" },
+    { "label": "Temperaturbereich", "value": "−40 °C bis +110 °C", "label_en": "Temperature range", "value_en": "−40 °C to +110 °C", "group": "thermisch" },
+    { "label": "Hülse", "value": "Edelstahl 1.4301 / Messing vernickelt", "label_en": "Sleeve", "value_en": "Stainless 1.4301 / nickel-plated brass", "group": "konstruktion" },
+    { "label": "Standardleitung", "value": "PVC 2× 0,22 mm², Silikon optional", "label_en": "Standard lead", "value_en": "PVC 2× 0.22 mm², silicone optional", "group": "konstruktion" },
+    { "label": "Schutzart", "value": "IP67 mit Vergussende", "label_en": "Protection class", "value_en": "IP67 with potted end", "group": "umgebung" },
+    { "label": "Reaktionszeit", "value": "τ < 6 s in bewegtem Wasser", "label_en": "Response time", "value_en": "τ < 6 s in moving water", "group": "thermisch" },
+    { "label": "Standardlängen Leitung", "value": "1,5 / 3 / 6 m, Sonderlängen auf Anfrage", "label_en": "Standard lead length", "value_en": "1.5 / 3 / 6 m, custom on request", "group": "abmessungen" }
+  ],
+  "bilder": [
+    { "src": "/komponenten/ntc-10k-konfektioniert.jpg", "alt": "Konfektionierte Temperatursensoren mit Kabel und Hülse", "alt_en": "Assembled temperature probes with cable and sleeve" }
+  ],
+  "tags": ["ntc", "10k", "konfektioniert", "kuehltechnik", "verdampfer"],
+  "anwendungen": [
+    "Verdampfertemperatur in Kühlmöbeln",
+    "Vorlauf-/Rücklaufmessung an Wärmepumpen",
+    "Lagertemperatur in Kühlzellen",
+    "Geräteinnentemperatur in Klimagehäusen"
+  ],
+  "anwendungen_en": [
+    "Evaporator temperature in refrigeration cabinets",
+    "Flow/return measurement on heat pumps",
+    "Cold storage temperature monitoring",
+    "Internal device temperature in climate enclosures"
+  ],
+  "branchen": ["hvac", "lebensmittel", "industrie", "labor"],
+  "lieferzeit": "ab Lager bei Standardlängen, 2–3 Wochen für Sonderkonfektion",
+  "lieferzeit_en": "from stock for standard lengths, 2–3 weeks for custom",
+  "verfuegbarkeit": "lager",
+  "temperaturbereich": "−40 °C bis +110 °C",
+  "featured": true,
+  "sortPriority": 10,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

@@ -1,0 +1,43 @@
+{
+  "titel": "Universalregler programmierbar, 2-stufig",
+  "titel_en": "Programmable universal controller, 2-stage",
+  "kategorie": "regler",
+  "kurzbeschreibung": "Frei programmierbarer Zwei-Stufen-Regler mit zwei Eingängen und drei Ausgängen. Für Heiz-, Kühl- und kombinierte Anwendungen.",
+  "kurzbeschreibung_en": "Freely programmable two-stage controller with two inputs and three outputs. For heating, cooling and combined applications.",
+  "beschreibung": "Flexibler Mehrzweck-Regler für Anlagenbauer und Maschinenhersteller. Hysterese, PID-Modus, Zeitfunktionen und Alarmgrenzen frei einstellbar. Geliefert mit deutscher Anleitung.",
+  "beschreibung_en": "Flexible multi-purpose controller for system integrators and machine builders. Hysteresis, PID mode, timers and alarm limits configurable. Delivered with German manual.",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Versorgung", "value": "12–24 V AC/DC oder 230 V AC", "label_en": "Supply", "value_en": "12–24 V AC/DC or 230 V AC", "group": "elektrisch" },
+    { "label": "Eingänge", "value": "2× konfigurierbar (NTC, PT100, PT1000, 0–10 V, 4–20 mA)", "label_en": "Inputs", "value_en": "2× configurable (NTC, PT100, PT1000, 0–10 V, 4–20 mA)", "group": "elektrisch" },
+    { "label": "Ausgänge", "value": "2× Relais 8 A + 1× SSR/Logik", "label_en": "Outputs", "value_en": "2× relay 8 A + 1× SSR/logic", "group": "elektrisch" },
+    { "label": "Regelmodi", "value": "Zweipunkt, PID, Zeitfunktionen", "label_en": "Control modes", "value_en": "On/off, PID, timer", "group": "funktion" },
+    { "label": "Schnittstelle", "value": "Modbus RTU optional", "label_en": "Interface", "value_en": "Modbus RTU optional", "group": "kommunikation" },
+    { "label": "Display", "value": "Doppel-LED, Soll- und Istwert simultan", "label_en": "Display", "value_en": "Dual LED, setpoint and actual value", "group": "bedienung" },
+    { "label": "Frontmaß", "value": "48 × 48 / 96 × 48 mm", "label_en": "Front size", "value_en": "48 × 48 / 96 × 48 mm", "group": "abmessungen" },
+    { "label": "Schutzart Front", "value": "IP65", "label_en": "Front protection", "value_en": "IP65", "group": "umgebung" }
+  ],
+  "bilder": [
+    { "src": "/komponenten/universalregler-programmierbar-2-stufen.jpg", "alt": "DIN-Hutschienen-Regler und Transmitter-Module", "alt_en": "DIN rail controller and transmitter modules" }
+  ],
+  "tags": ["universalregler", "pid", "modbus", "anlagenbau", "konfigurierbar"],
+  "anwendungen": [
+    "Klimaschrankregelung in Laboranwendungen",
+    "Mehrzonenheizung in Sondermaschinen",
+    "Heiz-/Kühlregelung an Prüfaufbauten",
+    "Prozessregelung in der Lebensmittelproduktion"
+  ],
+  "anwendungen_en": [
+    "Climate cabinet control in lab applications",
+    "Multi-zone heating in special machinery",
+    "Heat/cool control on test rigs",
+    "Process control in food production"
+  ],
+  "branchen": ["maschinenbau", "labor", "lebensmittel", "industrie"],
+  "lieferzeit": "2–4 Wochen je nach Variante",
+  "lieferzeit_en": "2–4 weeks depending on variant",
+  "verfuegbarkeit": "kurzfristig",
+  "sortPriority": 20,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

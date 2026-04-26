@@ -1,0 +1,40 @@
+{
+  "titel": "Oberflächensensor mit Magnetbefestigung",
+  "titel_en": "Surface sensor with magnetic mount",
+  "kategorie": "sensoren",
+  "kurzbeschreibung": "PT1000-Oberflächensensor mit Magnetbasis zur schnellen Anbringung an Rohren und ferritischen Oberflächen. Ohne Werkzeuge montierbar.",
+  "kurzbeschreibung_en": "PT1000 surface sensor with magnetic base for quick mounting on pipes and ferritic surfaces. Tool-free installation.",
+  "beschreibung": "Praktischer Oberflächensensor mit hochfestem Neodym-Magnet, Wärmeleitpad und federgelagerter Aufsetzfläche. Ideal für Diagnose, Inbetriebnahme und mobile Messketten.",
+  "beschreibung_en": "Practical surface sensor with high-grade neodymium magnet, thermal pad and spring-loaded contact face. Ideal for diagnostics, commissioning and mobile measurement.",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Sensor", "value": "PT1000 Klasse B", "label_en": "Sensor", "value_en": "PT1000 class B", "group": "elektrisch" },
+    { "label": "Anpressmagnet", "value": "Neodym, Haltekraft ≥ 30 N", "label_en": "Magnet", "value_en": "Neodymium, holding force ≥ 30 N", "group": "konstruktion" },
+    { "label": "Aufsetzfläche", "value": "federgelagert, Aluminium eloxiert", "label_en": "Contact face", "value_en": "Spring-loaded, anodised aluminium", "group": "konstruktion" },
+    { "label": "Wärmeleitpad", "value": "Silikon, austauschbar", "label_en": "Thermal pad", "value_en": "Silicone, replaceable", "group": "konstruktion" },
+    { "label": "Temperaturbereich Magnet", "value": "bis +120 °C", "label_en": "Magnet temperature", "value_en": "up to +120 °C", "group": "thermisch" },
+    { "label": "Messbereich Sensor", "value": "−40 °C bis +180 °C (Magnetabhängig)", "label_en": "Sensor range", "value_en": "−40 °C to +180 °C (magnet-limited)", "group": "thermisch" },
+    { "label": "Anschlussleitung", "value": "Silikon 2 m, Litze offen", "label_en": "Lead", "value_en": "Silicone 2 m, open leads", "group": "konstruktion" }
+  ],
+  "tags": ["oberflaechensensor", "pt1000", "magnet", "diagnose", "mobil"],
+  "anwendungen": [
+    "Inbetriebnahme von Heiz- und Kühlanlagen",
+    "Mobile Diagnose an Rohrleitungen",
+    "Wärmemengen-Verifizierung im Service",
+    "Schnellprüfung an Wärmetauschern"
+  ],
+  "anwendungen_en": [
+    "Commissioning of heating and cooling systems",
+    "Mobile diagnostics on pipework",
+    "Heat metering verification in service",
+    "Quick checks on heat exchangers"
+  ],
+  "branchen": ["hvac", "industrie"],
+  "lieferzeit": "ab Lager",
+  "lieferzeit_en": "from stock",
+  "verfuegbarkeit": "lager",
+  "temperaturbereich": "−40 °C bis +180 °C",
+  "sortPriority": 50,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

@@ -1,0 +1,48 @@
+{
+  "titel": "Kühlstellenregler EVK413",
+  "titel_en": "Refrigeration controller EVK413",
+  "kategorie": "regler",
+  "kurzbeschreibung": "Elektronischer Regler für statische und ventilatorbelüftete Kühlmöbel. NTC- oder PT1000-Eingang, drei Ausgänge, Standard-Stecksockel.",
+  "kurzbeschreibung_en": "Electronic controller for static and fan-assisted refrigeration cabinets. NTC or PT1000 input, three outputs, standard plug-in base.",
+  "beschreibung": "Bewährter Kühlstellenregler für gewerbliche Kühlmöbel. Verdampferregelung mit Abtau-Logik, Ventilator- und Beleuchtungsausgang. Im 32×74 mm Standardausschnitt, mit Klemmen oder Stecksockel verfügbar.",
+  "beschreibung_en": "Proven refrigeration controller for commercial cabinets. Evaporator control with defrost logic, fan and light output. In standard 32×74 mm cut-out, available with terminals or plug-in base.",
+  "hersteller": "EVCO",
+  "herstellerSichtbar": true,
+  "herkunftsregion": "eu",
+  "artikelnummer": "EVK413N7VHBS",
+  "specs": [
+    { "label": "Versorgung", "value": "230 V AC ±15 %, 50/60 Hz", "label_en": "Supply", "value_en": "230 V AC ±15 %, 50/60 Hz", "group": "elektrisch" },
+    { "label": "Eingang", "value": "1× NTC oder PT1000 (parametrierbar)", "label_en": "Input", "value_en": "1× NTC or PT1000 (configurable)", "group": "elektrisch" },
+    { "label": "Ausgänge", "value": "3 Relais — Verdichter, Abtauung, Ventilator/Licht", "label_en": "Outputs", "value_en": "3 relays — compressor, defrost, fan/light", "group": "elektrisch" },
+    { "label": "Verdichterrelais", "value": "16 A resistiv / 8 FLA", "label_en": "Compressor relay", "value_en": "16 A resistive / 8 FLA", "group": "elektrisch" },
+    { "label": "Abtauung", "value": "Heißgas / elektrisch / Pause", "label_en": "Defrost", "value_en": "Hot gas / electric / off-cycle", "group": "funktion" },
+    { "label": "Display", "value": "3-stellig + Statussymbole", "label_en": "Display", "value_en": "3-digit + status icons", "group": "bedienung" },
+    { "label": "Frontmaß", "value": "74 × 32 mm, Einbau in 71 × 29 mm", "label_en": "Front size", "value_en": "74 × 32 mm, cut-out 71 × 29 mm", "group": "abmessungen" },
+    { "label": "Schutzart Front", "value": "IP65", "label_en": "Front protection", "value_en": "IP65", "group": "umgebung" },
+    { "label": "Umgebungstemperatur", "value": "−5 °C bis +55 °C", "label_en": "Ambient temperature", "value_en": "−5 °C to +55 °C", "group": "umgebung" }
+  ],
+  "bilder": [
+    { "src": "/komponenten/evco-evk413-kuehlstellenregler.jpg", "alt": "Kühlstellenregler EVK413 mit 3-stelliger Anzeige", "alt_en": "EVK413 refrigeration controller with 3-digit display" }
+  ],
+  "tags": ["kuehlstellenregler", "evco", "ntc", "pt1000", "kuehlmoebel", "abtauung"],
+  "anwendungen": [
+    "Gewerbliche Kühlmöbel und Wandkühlregale",
+    "Tiefkühltruhen mit Heißgas-Abtauung",
+    "Steckerfertige Kühlzellen",
+    "Zentral- und Steckergeräte in Foodservice"
+  ],
+  "anwendungen_en": [
+    "Commercial cabinets and wall display cases",
+    "Freezer chests with hot-gas defrost",
+    "Plug-in cold rooms",
+    "Central and self-contained foodservice equipment"
+  ],
+  "branchen": ["lebensmittel", "hvac", "industrie"],
+  "lieferzeit": "ab Lager Mönchengladbach",
+  "lieferzeit_en": "from stock Mönchengladbach",
+  "verfuegbarkeit": "lager",
+  "featured": true,
+  "sortPriority": 10,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

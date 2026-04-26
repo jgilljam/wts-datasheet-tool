@@ -1,0 +1,41 @@
+{
+  "titel": "Sicherheitstemperaturbegrenzer (STB)",
+  "titel_en": "Safety temperature limiter (STL)",
+  "kategorie": "schalter",
+  "kurzbeschreibung": "Sicherheitstemperaturbegrenzer nach DIN EN 60730 zur Verhinderung unzulässig hoher Temperaturen. Manuell entriegelbar, baumustergeprüft.",
+  "kurzbeschreibung_en": "Safety temperature limiter per DIN EN 60730 to prevent excessive temperatures. Manually resettable, type-tested.",
+  "beschreibung": "STB mit Kapillarrohr- oder Bimetallfühler, Wirkungsweise nach Typ 2BL. Manuelle Entriegelung erst nach Abkühlung möglich — Schutzfunktion gegen Übertemperatur in Kessel-, Wärmetauscher- und Heizungsanwendungen.",
+  "beschreibung_en": "STL with capillary or bimetal sensor, mode of operation type 2BL. Manual reset only possible after cooling — protective function against over-temperature in boiler, heat exchanger and heating applications.",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Norm", "value": "DIN EN 60730 / VDE 0631 Typ 2BL", "label_en": "Standard", "value_en": "DIN EN 60730 / VDE 0631 type 2BL", "group": "qualitaet" },
+    { "label": "Schaltleistung", "value": "16 A bei 250 V AC", "label_en": "Switching capacity", "value_en": "16 A at 250 V AC", "group": "elektrisch" },
+    { "label": "Auslösetemperaturen", "value": "+60 °C / +95 °C / +110 °C / +130 °C / +150 °C", "label_en": "Trip temperatures", "value_en": "+60 °C / +95 °C / +110 °C / +130 °C / +150 °C", "group": "thermisch" },
+    { "label": "Schalttoleranz", "value": "±5 K", "label_en": "Switching tolerance", "value_en": "±5 K", "group": "thermisch" },
+    { "label": "Fühlerausführung", "value": "Bimetall-Tauchfühler oder Kapillarrohr 1,2 m", "label_en": "Sensor type", "value_en": "Bimetal probe or capillary 1.2 m", "group": "konstruktion" },
+    { "label": "Entriegelung", "value": "manuell, nach Abkühlung", "label_en": "Reset", "value_en": "manual, after cooling", "group": "funktion" },
+    { "label": "Anschluss", "value": "Schraubklemmen 2,5 mm²", "label_en": "Termination", "value_en": "Screw terminals 2.5 mm²", "group": "konstruktion" },
+    { "label": "Schutzart Gehäuse", "value": "IP40 (Front IP54)", "label_en": "Housing protection", "value_en": "IP40 (front IP54)", "group": "umgebung" }
+  ],
+  "tags": ["stb", "stl", "sicherheitsbegrenzer", "din-en-60730", "manuell-rueckstellend"],
+  "anwendungen": [
+    "Kesseltemperaturbegrenzung in Heizanlagen",
+    "Übertemperaturschutz an Industriebackofen",
+    "Sicherheitsabschaltung in Wärmetauschern",
+    "Brandschutz in Heißluft-Trockenanlagen"
+  ],
+  "anwendungen_en": [
+    "Boiler temperature limiting in heating systems",
+    "Over-temperature protection on industrial ovens",
+    "Safety shut-off in heat exchangers",
+    "Fire protection in hot-air drying systems"
+  ],
+  "branchen": ["industrie", "maschinenbau", "lebensmittel"],
+  "lieferzeit": "ab Lager",
+  "lieferzeit_en": "from stock",
+  "verfuegbarkeit": "lager",
+  "temperaturbereich": "+60 °C bis +150 °C Auslösetemperatur",
+  "sortPriority": 20,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

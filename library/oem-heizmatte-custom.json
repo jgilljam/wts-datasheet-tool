@@ -1,0 +1,43 @@
+{
+  "titel": "OEM-Heizmatte nach Kundenspezifikation",
+  "titel_en": "OEM heating mat to customer specification",
+  "kategorie": "sonderloesungen",
+  "kurzbeschreibung": "Großflächige Heizmatte aus Silikon oder Polyimid, gefertigt nach Zeichnung. Inklusive Sensorik, Anschluss-Layout und integriertem Übertemperaturschutz.",
+  "kurzbeschreibung_en": "Large-area heating mat in silicone or polyimide, manufactured to drawing. Includes sensors, termination layout and integrated over-temperature protection.",
+  "beschreibung": "OEM-Sonderlösung für serienreife Geräte mit individueller Geometrie. Wir setzen Ihr Lastenheft mit dem Hersteller um — von der ersten Skizze über den Prototypen bis zur Serienlieferung. Qualitätssicherung beim Lieferanten, Eingangsprüfung in Mönchengladbach.",
+  "beschreibung_en": "OEM custom solution for series-ready devices with individual geometry. We translate your specification with the manufacturer — from first sketch through prototype to series supply. Quality assurance at the supplier, incoming inspection in Mönchengladbach.",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Heizleitermaterial", "value": "Konstantan / NiCr / Edelstahl", "label_en": "Heating element", "value_en": "Constantan / NiCr / stainless", "group": "konstruktion" },
+    { "label": "Trägermaterial", "value": "Silikon, Polyimid, Glasfaser-Silikon", "label_en": "Substrate", "value_en": "Silicone, polyimide, fibreglass-silicone", "group": "konstruktion" },
+    { "label": "Maximalfläche", "value": "bis 2000 × 1500 mm pro Element", "label_en": "Max surface", "value_en": "up to 2000 × 1500 mm per element", "group": "abmessungen" },
+    { "label": "Spannung", "value": "12 V bis 400 V", "label_en": "Voltage", "value_en": "12 V to 400 V", "group": "elektrisch" },
+    { "label": "Temperaturbereich", "value": "Silikon −60 °C bis +230 °C, Polyimid bis +200 °C", "label_en": "Temperature range", "value_en": "Silicone −60 °C to +230 °C, polyimide up to +200 °C", "group": "thermisch" },
+    { "label": "Integrierte Komponenten", "value": "PT100 / PT1000 / NTC, STB, Sicherung — auf Anfrage", "label_en": "Integrated components", "value_en": "PT100 / PT1000 / NTC, STL, fuse — on request", "group": "funktion" },
+    { "label": "Befestigung", "value": "selbstklebend / mit Halterungen / vulkanisiert", "label_en": "Mounting", "value_en": "self-adhesive / with brackets / vulcanised", "group": "konstruktion" },
+    { "label": "Mindestmenge", "value": "ab 50 Stück", "label_en": "MOQ", "value_en": "from 50 pieces", "group": "kommerziell" }
+  ],
+  "tags": ["oem", "custom", "heizmatte", "silikon", "polyimid", "serienprodukt"],
+  "anwendungen": [
+    "Bodenbeheizung von Tiefkühltruhen",
+    "Behälter- und Tankbeheizung in Sondermaschinen",
+    "Verdampferplatten in Medizingeräten",
+    "Heizflächen für Druckmaschinen und Laminierwerke"
+  ],
+  "anwendungen_en": [
+    "Floor heating in freezer chests",
+    "Tank and vessel heating in special machinery",
+    "Evaporator plates in medical equipment",
+    "Heating surfaces for printing and laminating machines"
+  ],
+  "branchen": ["industrie", "maschinenbau", "lebensmittel"],
+  "lieferzeit": "Prototyp 6–8 Wochen, Serie nach Abruf",
+  "lieferzeit_en": "Prototype 6–8 weeks, series on call-off",
+  "verfuegbarkeit": "oem",
+  "oemOnly": true,
+  "mindestmenge": 50,
+  "featured": true,
+  "sortPriority": 10,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

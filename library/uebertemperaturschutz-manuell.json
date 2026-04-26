@@ -1,0 +1,41 @@
+{
+  "titel": "Übertemperaturschutz, manuell rückstellbar",
+  "titel_en": "Over-temperature protector, manually resettable",
+  "kategorie": "schalter",
+  "kurzbeschreibung": "Manuell rückstellbarer Klixon-Typ-Übertemperaturschutz für Geräte- und Aggregateschutz. Robuster Schraub- und Steckanschluss.",
+  "kurzbeschreibung_en": "Manually resettable Klixon-type over-temperature protector for device and aggregate protection. Robust screw and push-on terminations.",
+  "beschreibung": "Übertemperaturschutz mit Schnappkontakt und manuellem Reset-Knopf. Wird nach Auslösen erst durch Drücken des Knopfes wieder eingeschaltet. Eingesetzt zur einfachen Selbstabschaltung von Heizgeräten, Pumpen oder Klimakomponenten.",
+  "beschreibung_en": "Over-temperature protector with snap-action contact and manual reset button. After tripping, it can only be re-engaged by pressing the button. Used for simple self-shut-off of heating devices, pumps or HVAC components.",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Kontakt", "value": "Öffner mit Schnappkontakt", "label_en": "Contact", "value_en": "NC with snap-action", "group": "elektrisch" },
+    { "label": "Schaltleistung", "value": "16 A bei 250 V AC", "label_en": "Switching capacity", "value_en": "16 A at 250 V AC", "group": "elektrisch" },
+    { "label": "Auslösetemperaturen", "value": "+70 °C bis +150 °C in 10 K-Schritten", "label_en": "Trip temperatures", "value_en": "+70 °C to +150 °C in 10 K steps", "group": "thermisch" },
+    { "label": "Schalttoleranz", "value": "±5 K", "label_en": "Switching tolerance", "value_en": "±5 K", "group": "thermisch" },
+    { "label": "Reset", "value": "manuell, Knopf an Oberseite", "label_en": "Reset", "value_en": "manual, top-side button", "group": "funktion" },
+    { "label": "Gehäuse", "value": "Phenolharz, isoliert", "label_en": "Housing", "value_en": "Phenolic, insulated", "group": "konstruktion" },
+    { "label": "Anschluss", "value": "Flachstecker 6,3 mm oder Schraubklemme", "label_en": "Termination", "value_en": "Spade 6.3 mm or screw terminal", "group": "konstruktion" },
+    { "label": "Norm", "value": "EN 60730-1, UL recognised", "label_en": "Standard", "value_en": "EN 60730-1, UL recognised", "group": "qualitaet" }
+  ],
+  "tags": ["uebertemperaturschutz", "manuell-reset", "klixon", "heizung", "pumpe"],
+  "anwendungen": [
+    "Schutz von Heizpatronen in Industriekomponenten",
+    "Pumpenschutz in geschlossenen Kreisläufen",
+    "Aggregateschutz in Foodservice-Geräten",
+    "Sicherheitsfunktion in OEM-Anwendungen"
+  ],
+  "anwendungen_en": [
+    "Heater protection in industrial components",
+    "Pump protection in closed loops",
+    "Aggregate protection in foodservice equipment",
+    "Safety function in OEM applications"
+  ],
+  "branchen": ["industrie", "lebensmittel", "hvac"],
+  "lieferzeit": "ab Lager",
+  "lieferzeit_en": "from stock",
+  "verfuegbarkeit": "lager",
+  "temperaturbereich": "+70 °C bis +150 °C Auslösetemperatur",
+  "sortPriority": 30,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

@@ -1,0 +1,42 @@
+{
+  "titel": "Anzeige- und Bedienterminal Touch",
+  "titel_en": "Display and operator terminal, touch",
+  "kategorie": "regler",
+  "kurzbeschreibung": "Resistives Touch-Terminal mit Modbus-Anschluss. Für Anlagenüberwachung, Mehrkomponentensteuerung und Kundenanzeige.",
+  "kurzbeschreibung_en": "Resistive touch terminal with Modbus connection. For plant monitoring, multi-component control and customer display.",
+  "beschreibung": "Robustes Bedienterminal für Industrie- und Foodservice-Umgebung. Frei konfigurierbare Bildschirmseiten, Alarm-Logging, Trend-Aufzeichnung. Anschluss an bis zu acht Regler oder Sensoren über Modbus RTU.",
+  "beschreibung_en": "Rugged operator terminal for industrial and foodservice environments. Freely configurable screens, alarm logging, trend recording. Connection to up to eight controllers or sensors via Modbus RTU.",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Display", "value": "4,3″ TFT, 480×272 px", "label_en": "Display", "value_en": "4.3″ TFT, 480×272 px", "group": "bedienung" },
+    { "label": "Touch", "value": "Resistiv, ölbeständig", "label_en": "Touch", "value_en": "Resistive, oil-resistant", "group": "bedienung" },
+    { "label": "Versorgung", "value": "24 V DC", "label_en": "Supply", "value_en": "24 V DC", "group": "elektrisch" },
+    { "label": "Schnittstellen", "value": "Modbus RTU, USB, optional Ethernet", "label_en": "Interfaces", "value_en": "Modbus RTU, USB, optional Ethernet", "group": "kommunikation" },
+    { "label": "Speicher", "value": "32 MB Programm + 8 MB Daten", "label_en": "Memory", "value_en": "32 MB program + 8 MB data", "group": "elektrisch" },
+    { "label": "Schutzart Front", "value": "IP65", "label_en": "Front protection", "value_en": "IP65", "group": "umgebung" },
+    { "label": "Umgebungstemperatur", "value": "0 °C bis +50 °C", "label_en": "Ambient temperature", "value_en": "0 °C to +50 °C", "group": "umgebung" }
+  ],
+  "bilder": [
+    { "src": "/komponenten/anzeige-bedienterminal-touch.jpg", "alt": "Touch-Bedienterminal mit Steuerungsplatine", "alt_en": "Touch operator terminal with control board" }
+  ],
+  "tags": ["touch", "terminal", "modbus", "anlagenueberwachung", "alarm-logging"],
+  "anwendungen": [
+    "Zentrale Steuerung mehrerer Kühlstellen",
+    "Anlagenüberwachung in Reinräumen",
+    "Bedienoberfläche für Sondermaschinen",
+    "Kundeninformation an Kühlmöbeln im Handel"
+  ],
+  "anwendungen_en": [
+    "Central control of multiple refrigeration points",
+    "Plant monitoring in cleanrooms",
+    "Operator interface for special machinery",
+    "Customer information on retail refrigeration"
+  ],
+  "branchen": ["lebensmittel", "industrie", "labor"],
+  "lieferzeit": "4–6 Wochen",
+  "lieferzeit_en": "4–6 weeks",
+  "verfuegbarkeit": "auf_anfrage",
+  "sortPriority": 30,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

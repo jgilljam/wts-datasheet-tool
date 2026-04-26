@@ -1,0 +1,44 @@
+{
+  "titel": "Thermoelement Typ K, Mantelausführung",
+  "titel_en": "Thermocouple type K, mineral-insulated",
+  "kategorie": "sensoren",
+  "kurzbeschreibung": "Mantelthermoelement Typ K für hohe Temperaturen bis +1100 °C. Schnelle Reaktionszeit, biegbar, vakuumdicht.",
+  "kurzbeschreibung_en": "Mineral-insulated type K thermocouple for high temperatures up to +1100 °C. Fast response, bendable, vacuum-tight.",
+  "beschreibung": "Standard-Mantelthermoelement Typ K (NiCr-Ni) für Hochtemperaturanwendungen. Mantel aus Inconel 600 oder 1.4541. Lieferbar mit Anschlusskopf, Litzenausgang oder Standardstecker (Mini- oder Standard-Stecker).",
+  "beschreibung_en": "Standard mineral-insulated type K thermocouple (NiCr-Ni) for high temperature use. Sheath in Inconel 600 or 1.4541. Available with terminal head, lead wires or standard plug (mini or standard).",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Typ", "value": "K (NiCr-Ni) nach IEC 60584", "label_en": "Type", "value_en": "K (NiCr-Ni) per IEC 60584", "group": "elektrisch" },
+    { "label": "Genauigkeit", "value": "Klasse 1 (±1,5 °C oder 0,4 %)", "label_en": "Accuracy", "value_en": "Class 1 (±1.5 °C or 0.4 %)", "group": "elektrisch" },
+    { "label": "Temperaturbereich", "value": "−40 °C bis +1100 °C", "label_en": "Temperature range", "value_en": "−40 °C to +1100 °C", "group": "thermisch" },
+    { "label": "Mantelwerkstoff", "value": "Inconel 600 / Edelstahl 1.4541", "label_en": "Sheath material", "value_en": "Inconel 600 / stainless 1.4541", "group": "konstruktion" },
+    { "label": "Mantel-Ø", "value": "0,5 / 1,0 / 1,5 / 3,0 / 6,0 mm", "label_en": "Sheath diameter", "value_en": "0.5 / 1.0 / 1.5 / 3.0 / 6.0 mm", "group": "abmessungen" },
+    { "label": "Messpunkt", "value": "geerdet / isoliert", "label_en": "Junction", "value_en": "grounded / ungrounded", "group": "konstruktion" },
+    { "label": "Mantellänge", "value": "100 – 3000 mm", "label_en": "Sheath length", "value_en": "100 – 3000 mm", "group": "abmessungen" },
+    { "label": "Reaktionszeit (Ø 1 mm)", "value": "τ ≈ 0,2 s in bewegtem Wasser", "label_en": "Response (Ø 1 mm)", "value_en": "τ ≈ 0.2 s in moving water", "group": "thermisch" }
+  ],
+  "bilder": [
+    { "src": "/komponenten/thermoelement-typ-k-mantel.jpg", "alt": "Sensorik-Sortiment mit Anschlusskopf-, Mantel- und Raumfühlern", "alt_en": "Sensor portfolio with connection head, jacketed and room sensors" }
+  ],
+  "tags": ["thermoelement", "typ-k", "nicr-ni", "hochtemperatur", "mantelfuehler"],
+  "anwendungen": [
+    "Ofentemperatur in Wärmebehandlungsanlagen",
+    "Brennertest und Verbrennungsmessung",
+    "Schmelze-Überwachung im Kunststoffspritzguss",
+    "Abgastemperatur in Motorenprüfständen"
+  ],
+  "anwendungen_en": [
+    "Furnace temperature in heat treatment",
+    "Burner test and combustion measurement",
+    "Melt monitoring in plastic injection moulding",
+    "Exhaust temperature on engine test benches"
+  ],
+  "branchen": ["industrie", "maschinenbau", "automotive", "labor"],
+  "lieferzeit": "3–5 Wochen",
+  "lieferzeit_en": "3–5 weeks",
+  "verfuegbarkeit": "kurzfristig",
+  "temperaturbereich": "−40 °C bis +1100 °C",
+  "sortPriority": 30,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}

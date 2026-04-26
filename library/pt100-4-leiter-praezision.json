@@ -1,0 +1,44 @@
+{
+  "titel": "PT100 4-Leiter Präzision",
+  "titel_en": "PT100 4-wire precision",
+  "kategorie": "sensoren",
+  "kurzbeschreibung": "Hochpräziser Platin-Widerstandsfühler PT100 in 4-Leiter-Schaltung. Klasse A oder 1/3 DIN. Für Labor- und Kalibrieranwendungen.",
+  "kurzbeschreibung_en": "High-precision PT100 platinum resistance probe in 4-wire connection. Class A or 1/3 DIN. For laboratory and calibration use.",
+  "beschreibung": "Präzisions-Platinfühler in 4-Leiter-Schaltung zur Eliminierung des Leitungswiderstands. Standardausführung Klasse A nach IEC 60751, optional 1/3 DIN, 1/10 DIN oder kalibrierter Bezug. Mit Werks- oder DAkkS-Kalibrierschein lieferbar.",
+  "beschreibung_en": "Precision platinum probe in 4-wire connection to eliminate lead resistance. Standard accuracy class A per IEC 60751, optional 1/3 DIN, 1/10 DIN or calibrated reference. Available with works or DAkkS calibration certificate.",
+  "herkunftsregion": "eu",
+  "specs": [
+    { "label": "Nennwiderstand", "value": "100 Ω bei 0 °C", "label_en": "Nominal resistance", "value_en": "100 Ω at 0 °C", "group": "elektrisch" },
+    { "label": "Genauigkeit", "value": "Klasse A (±0,15 °C bei 0 °C), optional 1/3 DIN", "label_en": "Accuracy", "value_en": "Class A (±0.15 °C at 0 °C), optional 1/3 DIN", "group": "elektrisch" },
+    { "label": "Schaltung", "value": "4-Leiter (Standard)", "label_en": "Wiring", "value_en": "4-wire (standard)", "group": "elektrisch" },
+    { "label": "Temperaturbereich", "value": "−200 °C bis +600 °C", "label_en": "Temperature range", "value_en": "−200 °C to +600 °C", "group": "thermisch" },
+    { "label": "Mantel-Ø", "value": "3,0 / 4,5 / 6,0 mm", "label_en": "Sheath diameter", "value_en": "3.0 / 4.5 / 6.0 mm", "group": "abmessungen" },
+    { "label": "Mantellänge", "value": "100 – 1000 mm", "label_en": "Sheath length", "value_en": "100 – 1000 mm", "group": "abmessungen" },
+    { "label": "Mantelwerkstoff", "value": "Edelstahl 1.4571", "label_en": "Sheath material", "value_en": "Stainless 1.4571", "group": "konstruktion" },
+    { "label": "Kalibrierung", "value": "Werks- oder DAkkS-Schein optional", "label_en": "Calibration", "value_en": "Works or DAkkS certificate optional", "group": "qualitaet" }
+  ],
+  "bilder": [
+    { "src": "/komponenten/pt100-4-leiter-praezision.jpg", "alt": "Pt100 Sensor mit Anschlusskopf in Edelstahl", "alt_en": "Pt100 sensor with stainless connection head" }
+  ],
+  "tags": ["pt100", "4-leiter", "klasse-a", "praezision", "kalibriert", "labor"],
+  "anwendungen": [
+    "Referenzmessung in Kalibrierlabor",
+    "Klimakammern in der Validierung",
+    "Forschungs- und Entwicklungsprüfstände",
+    "Prozesstemperatur in der Pharma-Produktion"
+  ],
+  "anwendungen_en": [
+    "Reference measurement in calibration labs",
+    "Climate chambers in validation",
+    "R&D test benches",
+    "Process temperature in pharmaceutical production"
+  ],
+  "branchen": ["labor", "automotive", "industrie"],
+  "lieferzeit": "3–6 Wochen, je nach Kalibrierumfang",
+  "lieferzeit_en": "3–6 weeks, depending on calibration scope",
+  "verfuegbarkeit": "auf_anfrage",
+  "temperaturbereich": "−200 °C bis +600 °C",
+  "sortPriority": 40,
+  "publishedAt": "2025-09-15",
+  "updatedAt": "2026-04-18"
+}
