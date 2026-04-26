@@ -1,0 +1,159 @@
+@page {
+  size: A4;
+  margin: 14mm 14mm 16mm 14mm;
+  @bottom-right {
+    content: counter(page) " / " counter(pages);
+    font-family: "Inter", system-ui, sans-serif;
+    font-size: 7.5pt;
+    color: #52525B;
+  }
+  @bottom-left {
+    content: "wts-trading.de";
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 7pt;
+    color: #52525B;
+    letter-spacing: 0.06em;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-size: 9pt;
+  color: #1A1918;
+  line-height: 1.45;
+}
+
+h1, h2, h3 {
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: #0A2540;
+}
+h1 { font-size: 22pt; font-weight: 700; line-height: 1.15; }
+h2 { font-size: 11pt; font-weight: 600; margin-bottom: 8pt;
+     padding-bottom: 4pt; border-bottom: 1px solid #E4E4E7;
+     text-transform: uppercase; letter-spacing: 0.06em; color: #0A2540; }
+
+/* Header */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10pt;
+  border-bottom: 2px solid #0A2540;
+  margin-bottom: 14pt;
+}
+.logo { height: 32pt; width: auto; }
+.header-meta {
+  text-align: right;
+  font-size: 8.5pt;
+  line-height: 1.35;
+}
+.header-meta .company { font-weight: 600; color: #0A2540; }
+.header-meta .tagline { color: #52525B; font-family: "JetBrains Mono", ui-monospace, monospace;
+                        text-transform: uppercase; letter-spacing: 0.18em; font-size: 7pt; }
+
+/* Hero */
+.hero {
+  margin-bottom: 10pt;
+  padding-bottom: 8pt;
+  border-bottom: 1px solid #E4E4E7;
+}
+.eyebrow {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 7.5pt;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #0A2540;
+  font-weight: 500;
+  margin-bottom: 4pt;
+}
+.lead {
+  font-size: 11pt;
+  color: #1A1918;
+  margin-top: 6pt;
+  margin-bottom: 0;
+  max-width: 70%;
+}
+.artikel {
+  margin-top: 8pt;
+  font-size: 8.5pt;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  color: #52525B;
+}
+.artikel span { color: #1A1918; font-weight: 600; }
+
+/* Block */
+.block { margin-bottom: 10pt; }
+.block p { margin: 0; }
+
+/* Specs */
+.specs-group { margin-bottom: 6pt; break-inside: avoid; }
+.specs-group-title {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 7.5pt;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #D84B41;
+  font-weight: 500;
+  margin-bottom: 4pt;
+}
+table.specs {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+}
+table.specs th, table.specs td {
+  text-align: left;
+  vertical-align: top;
+  padding: 2.5pt 6pt;
+  border-bottom: 1px solid #F5F5F7;
+}
+table.specs th {
+  font-weight: 500;
+  color: #52525B;
+  width: 38%;
+  background: #F5F5F7;
+}
+table.specs td { color: #1A1918; }
+
+/* Two-column */
+.two-col {
+  display: flex;
+  gap: 14pt;
+  margin-bottom: 10pt;
+}
+.two-col .col { flex: 1; }
+.two-col ul { margin: 0; padding-left: 14pt; }
+.two-col li { margin-bottom: 3pt; }
+.two-col dl { margin: 0; }
+.two-col dt {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 7.5pt;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #52525B;
+  margin-bottom: 1pt;
+  margin-top: 6pt;
+}
+.two-col dt:first-child { margin-top: 0; }
+.two-col dd { margin: 0 0 3pt 0; color: #1A1918; }
+
+/* Footer im normalen Body-Flow am Ende des Inhalts */
+.page-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  font-size: 7.5pt;
+  color: #52525B;
+  border-top: 1px solid #E4E4E7;
+  padding-top: 5pt;
+  margin-top: 10pt;
+  break-inside: avoid;
+}
+.footer-left strong { color: #0A2540; }
+.footer-right { text-align: right; }
+.muted { color: #52525B; }

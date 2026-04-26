@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <title>{{ titel }}</title>
+  <link rel="stylesheet" href="datenblatt.css">
+</head>
+<body>
+  <header class="page-header">
+    <img class="logo" src="{{ logo_uri }}" alt="WTS">
+    <div class="header-meta">
+      <div class="company">Weber Trading & Service</div>
+      <div class="tagline">{{ tr.tagline }}</div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow">{{ tr.kategorie_label }} · {{ kategorie_display }}</div>
+    <h1>{{ titel }}</h1>
+    <p class="lead">{{ kurzbeschreibung }}</p>
+    {% if artikelnummer %}
+    <div class="artikel">{{ tr.artikelnummer }}: <span>{{ artikelnummer }}</span></div>
+    {% endif %}
+  </section>
+
+  <section class="block">
+    <h2>{{ tr.beschreibung }}</h2>
+    <p>{{ beschreibung }}</p>
+  </section>
+
+  <section class="block">
+    <h2>{{ tr.specs }}</h2>
+    {% for group, items in specs_grouped.items() %}
+    <div class="specs-group">
+      <div class="specs-group-title">{{ tr.spec_groups[group] }}</div>
+      <table class="specs">
+        <tbody>
+        {% for s in items %}
+          <tr>
+            <th>{{ s.label }}</th>
+            <td>{{ s.value }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section class="two-col">
+    <div class="col">
+      <h2>{{ tr.anwendungen }}</h2>
+      <ul>
+        {% for a in anwendungen %}<li>{{ a }}</li>{% endfor %}
+      </ul>
+    </div>
+    <div class="col">
+      <h2>{{ tr.verfuegbarkeit }}</h2>
+      <dl>
+        <dt>{{ tr.verfuegbarkeit_label }}</dt><dd>{{ verfuegbarkeit_display }}</dd>
+        <dt>{{ tr.lieferzeit }}</dt><dd>{{ lieferzeit }}</dd>
+        {% if branchen_display %}
+        <dt>{{ tr.branchen }}</dt><dd>{{ branchen_display }}</dd>
+        {% endif %}
+        {% if temperaturbereich %}
+        <dt>{{ tr.temperaturbereich }}</dt><dd>{{ temperaturbereich }}</dd>
+        {% endif %}
+      </dl>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <div class="footer-left">
+      <strong>Weber Trading & Service</strong><br>
+      Kaiserstraße 35 · Deutschland<br>
+      <span class="muted">{{ tr.disclaimer }}</span>
+    </div>
+    <div class="footer-right">
+      <div>{{ tr.stand }}: {{ updatedAt }}</div>
+      <div class="muted">wts-trading.de</div>
+    </div>
+  </footer>
+</body>
+</html>
