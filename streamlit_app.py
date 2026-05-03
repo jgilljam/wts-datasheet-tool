@@ -67,26 +67,26 @@ st.session_state["__wts_pages"] = pages_map
 # {Section-Header: [pages]} und rendert die Section-Header als getrennte
 # Gruppen in der Sidebar.
 sidebar_groups = {
-    "🏠  Übersicht": [pages_map["dashboard"]],
-    "💼  Verkauf": [
+    "Übersicht": [pages_map["dashboard"]],
+    "Verkauf": [
         pages_map["quotations"],
         pages_map["orders"],
         pages_map["deliveries"],
         pages_map["invoices"],
         pages_map["dunning"],
     ],
-    "🚚  Einkauf": [
+    "Einkauf": [
         pages_map["purchase_orders"],
         pages_map["incoming_invoices"],
     ],
-    "✉️  Kommunikation": [pages_map["inbox"]],
-    "📚  Stammdaten": [
+    "Kommunikation": [pages_map["inbox"]],
+    "Stammdaten": [
         pages_map["parties"],
         pages_map["articles"],
         pages_map["stock"],
     ],
-    "🛠  Werkzeuge": [pages_map["datasheet"]],
-    "🏢  Verwaltung": [
+    "Werkzeuge": [pages_map["datasheet"]],
+    "Verwaltung": [
         pages_map["migration"],
         pages_map["users"],
         pages_map["settings"],
