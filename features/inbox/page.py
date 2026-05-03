@@ -71,10 +71,11 @@ def _list_mails(
     if only_status:
         q = q.eq("status", only_status)
     if exclude_status:
-        # PostgREST hat kein not.in_, wir filtern in Python falls nötig
-        # → einfacher: Whitelist via in_(["received", "ai_classified", ...])
-        from_status = ["received", "ai_processing", "ai_classified", "linked"]
-        from_status = [s for s in from_status if s not in exclude_status]
+        # Whitelist aller existierenden Stati abzüglich der ausgeschlossenen.
+        # WICHTIG: 'failed' MUSS in der Default-Liste bleiben, sonst verschwinden
+        # Mails mit KI-Crash komplett aus der UI.
+        all_status = ["received", "ai_processing", "ai_classified", "linked", "failed"]
+        from_status = [s for s in all_status if s not in exclude_status]
         if from_status:
             q = q.in_("status", from_status)
     if search:
@@ -173,7 +174,7 @@ def _render_topbar() -> None:
             help="Alle 60 sec automatisch pullen.",
         )
 
-    if not (sales_ok or invoice_ok):
+    if not (sales_ok or invoice_ok or info_ok):
         st.info(
             "ℹ️ IMAP-Login fehlt — trag IMAP_SALES_USER/PASSWORD und "
             "IMAP_INVOICE_USER/PASSWORD in `.streamlit/secrets.toml` ein."
@@ -247,7 +248,9 @@ def _render_filter_tabs() -> dict[str, Any]:
         label_visibility="collapsed",
         key="inbox_active_filter",
     )
-    kwargs = next((kw for k, _, kw in FILTER_TABS if k == chosen), {})
+    # WICHTIG: Kopie statt Referenz — sonst wird die Modul-Konstante FILTER_TABS
+    # mutiert und die Tab-Counts zählen ab dem 2. Render mit Suchterm.
+    kwargs = dict(next((kw for k, _, kw in FILTER_TABS if k == chosen), {}))
     kwargs["search"] = st.session_state.get("inbox_search") or None
     return kwargs
 

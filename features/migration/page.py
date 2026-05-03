@@ -168,7 +168,11 @@ def _step_review(parsed: list[dict[str, Any]]) -> None:
         df,
         use_container_width=True,
         hide_index=True,
-        disabled=["#", "Konfidenz", "Positionen", "Summe (€)"],
+        # Alle Felder read-only — sonst gehen Korrekturen am DataFrame beim
+        # Import verloren (wir nutzen den ursprünglichen `parsed`-Dict).
+        # Fein-Korrekturen passieren im Detail-Expander unten oder nach Import
+        # direkt im Auftrag.
+        disabled=df.columns.drop("✓").tolist(),
         column_config={
             "✓": st.column_config.CheckboxColumn(width="small", help="Importieren?"),
             "#": st.column_config.NumberColumn(width="small"),
