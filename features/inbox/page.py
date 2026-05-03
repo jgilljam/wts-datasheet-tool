@@ -22,6 +22,8 @@ from core.utils import format_date, sanitize_search
 
 from lib import imap_inbox, mail, mail_pipeline, mail_to_beleg
 
+from . import review as review_mod
+
 
 # ============================================================
 # Konstanten
@@ -306,6 +308,11 @@ def _render_detail(mail_id: str) -> None:
         st.error("Mail nicht gefunden.")
         return
 
+    # Review-Mode (Side-by-Side PDF + editierbare Felder)
+    if st.session_state.get(f"review_mode_{mail_id}"):
+        review_mod.render_review(mail_row)
+        return
+
     if mail_row.get("read_status") == "unread":
         _mark_read(mail_id, True)
         mail_row["read_status"] = "read"
@@ -503,7 +510,16 @@ def _render_sales_order_card(mail_row: dict[str, Any], payload: dict[str, Any]) 
         st.caption(f"Kunden-Bestell-Nr: `{cust_ref}`")
 
     actor = (st.session_state.get("user") or {}).get("email")
-    if st.button(
+    btn_review, btn_create = st.columns(2)
+    if btn_review.button(
+        "📝 Prüfen & bearbeiten",
+        use_container_width=True,
+        key=f"toreview_{mail_row['id']}",
+        help="Side-by-Side: PDF links, editierbare Felder rechts.",
+    ):
+        st.session_state[f"review_mode_{mail_row['id']}"] = True
+        st.rerun()
+    if btn_create.button(
         "→ Auftrag (Draft) anlegen",
         type="primary",
         use_container_width=True,
