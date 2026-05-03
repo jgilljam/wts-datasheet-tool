@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from core import app_settings as cfg
 from core.branding import render_footer, render_header
 from core.db import supabase
 from features.invoices import repo as inv_repo
@@ -75,8 +76,8 @@ def render() -> None:
     else:
         st.success(f"✅ Alle {total} relevanten Pflichtfelder sind ausgefüllt.")
 
-    tab_firma, tab_kontakt, tab_steuer, tab_bank, tab_mahn = st.tabs(
-        ["🏢 Firma", "📞 Kontakt", "💼 Steuer & HR", "🏦 Bank", "📨 Mahnwesen"]
+    tab_firma, tab_kontakt, tab_steuer, tab_bank, tab_mahn, tab_pipeline = st.tabs(
+        ["🏢 Firma", "📞 Kontakt", "💼 Steuer & HR", "🏦 Bank", "📨 Mahnwesen", "🤖 Mail-Pipeline"]
     )
 
     with tab_firma:
@@ -247,6 +248,68 @@ def render() -> None:
                 })
                 st.toast("Mahnwesen gespeichert.", icon="✅")
                 st.rerun()
+
+    with tab_pipeline:
+        st.subheader("Mail-Pipeline")
+        st.caption(
+            "Steuert was die KI beim eingehenden Mail-Pull automatisch macht. "
+            "Werte hier gewinnen über `secrets.toml` — du brauchst keinen Deploy für Anpassungen."
+        )
+
+        cur_classify = cfg.get_bool("mail.auto_classify", default=True, secret_fallback="MAIL_AUTO_CLASSIFY")
+        cur_convert = cfg.get_bool("mail.auto_convert", default=False, secret_fallback="MAIL_AUTO_CONVERT")
+        cur_min_conf = cfg.get_str(
+            "mail.auto_convert_min_confidence",
+            default="high",
+            secret_fallback="MAIL_AUTO_CONVERT_MIN_CONFIDENCE",
+        )
+        actor = (st.session_state.get("user") or {}).get("email")
+
+        with st.form("settings_pipeline"):
+            st.markdown("**Auto-KI**")
+            auto_classify = st.toggle(
+                "🤖 KI direkt beim Pull starten",
+                value=cur_classify,
+                help=(
+                    "Aktiv: jede neue Mail wird direkt nach dem IMAP-Pull klassifiziert + extrahiert. "
+                    "Aus: KI nur manuell per Knopf in der Mail-Detail-Ansicht."
+                ),
+            )
+
+            st.markdown("**Auto-Convert** (Beleg-Anlage ohne User-Klick)")
+            st.caption(
+                "🔒 Sicherheits-Schutz: Auto-Convert läuft nur bei Domain-Match (Absender-Domain ≠ "
+                "Freemail-Provider) UND Konfidenz ≥ Mindeststufe. Mails werden NICHT versendet — "
+                "nur Drafts angelegt."
+            )
+            auto_convert = st.toggle(
+                "⚡ Bei high-Konfidenz Auftrag automatisch anlegen",
+                value=cur_convert,
+                help=(
+                    "Aktiv: bei Sales-Order mit Konfidenz ≥ Mindeststufe und bekannter Domain wird "
+                    "direkt ein Auftrag-Draft erzeugt. Aus: Auftrag entsteht erst nach Klick auf "
+                    "'→ Auftrag (Draft) anlegen' in der Posteingang-UI."
+                ),
+            )
+            min_conf = st.select_slider(
+                "Mindest-Konfidenz für Auto-Convert",
+                options=["low", "medium", "high"],
+                value=cur_min_conf if cur_min_conf in ("low", "medium", "high") else "high",
+                disabled=not auto_convert,
+                help="Empfehlung: 'high' — sonst können Drafts mit unklaren Mengen entstehen.",
+            )
+
+            if st.form_submit_button("💾 Pipeline-Settings speichern", type="primary"):
+                cfg.set_value("mail.auto_classify", auto_classify, actor_email=actor)
+                cfg.set_value("mail.auto_convert", auto_convert, actor_email=actor)
+                cfg.set_value("mail.auto_convert_min_confidence", min_conf, actor_email=actor)
+                st.toast("Pipeline-Settings gespeichert.", icon="✅")
+                st.rerun()
+
+        st.divider()
+        st.caption(
+            f"Aktive Werte: classify={cur_classify} · convert={cur_convert} · min_conf={cur_min_conf}"
+        )
 
     st.divider()
     with st.expander("🔍 Aktueller Datensatz (Debug)"):

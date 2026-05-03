@@ -31,13 +31,17 @@ from . import imap_inbox, mail_ai, mail_to_beleg
 # ============================================================
 
 def settings() -> dict[str, Any]:
-    """Liest Pipeline-Settings aus Streamlit-Secrets mit sicheren Defaults."""
-    s = st.secrets
+    """Liest Pipeline-Settings: app_settings (DB) zuerst, dann Streamlit-Secrets, dann Default."""
+    from core import app_settings as cfg
     return {
-        "auto_classify": bool(s.get("MAIL_AUTO_CLASSIFY", True)),     # KI direkt beim Pull
-        "auto_convert": bool(s.get("MAIL_AUTO_CONVERT", False)),      # Convert bei high+match
-        "auto_convert_min_confidence": str(s.get("MAIL_AUTO_CONVERT_MIN_CONFIDENCE", "high")),
-        "gemini_model": str(s.get("GEMINI_MODEL", "gemini-2.5-flash-lite")),
+        "auto_classify": cfg.get_bool("mail.auto_classify", default=True, secret_fallback="MAIL_AUTO_CLASSIFY"),
+        "auto_convert": cfg.get_bool("mail.auto_convert", default=False, secret_fallback="MAIL_AUTO_CONVERT"),
+        "auto_convert_min_confidence": cfg.get_str(
+            "mail.auto_convert_min_confidence",
+            default="high",
+            secret_fallback="MAIL_AUTO_CONVERT_MIN_CONFIDENCE",
+        ),
+        "gemini_model": str(st.secrets.get("GEMINI_MODEL", "gemini-2.5-flash-lite")),
     }
 
 
