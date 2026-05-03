@@ -17,6 +17,9 @@ import streamlit as st
 
 from core.branding import render_footer, render_header
 from core.db import supabase
+from core.ui.kpi import render_kpis
+from core.ui.status import render_status_stepper
+from core.utils import format_date as _format_date_util, parse_date
 
 from . import repo, service
 from .constants import (
@@ -27,6 +30,7 @@ from .constants import (
     OUTBOUND_STATUSES,
     SHIPPING_METHOD_LABELS,
     SHIPPING_METHODS,
+    STATUS_COLORS,
     STATUS_LABELS_DE,
     TERMIN_LABELS,
     TERMIN_TYPES,
@@ -46,24 +50,11 @@ NEW_PARTY_SENTINEL = "__none__"
 
 
 def _expected_date(row: dict[str, Any]) -> date | None:
-    v = row.get("expected_at")
-    if not v:
-        return None
-    if isinstance(v, datetime):
-        return v.date()
-    if isinstance(v, date):
-        return v
-    if isinstance(v, str):
-        try:
-            return datetime.fromisoformat(v.replace("Z", "+00:00")).date()
-        except ValueError:
-            return None
-    return None
+    return parse_date(row.get("expected_at"))
 
 
 def _format_date(v: Any) -> str:
-    d = _expected_date({"expected_at": v})
-    return d.isoformat() if d else ""
+    return _format_date_util(v)
 
 
 def _kpis(rows: list[dict[str, Any]]) -> None:
@@ -77,11 +68,12 @@ def _kpis(rows: list[dict[str, Any]]) -> None:
         1 for r in open_rows if (d := _expected_date(r)) and today < d <= week_end
     )
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Offen", len(open_rows))
-    c2.metric("Überfällig", overdue)
-    c3.metric("Heute fällig", today_due)
-    c4.metric("Diese Woche", this_week)
+    render_kpis([
+        ("Offen", len(open_rows)),
+        ("Überfällig", overdue),
+        ("Heute fällig", today_due),
+        ("Diese Woche", this_week),
+    ])
 
 
 def _urgency(row: dict[str, Any], today: date) -> str:
@@ -260,6 +252,42 @@ def _render_create_tab() -> None:
                 # Manuell rerun, damit Dropdown frisch lädt
                 st.rerun()
 
+    # Optional: Verknüpfung zu Auftrag (outbound) / Bestellung (inbound)
+    related_order_id = NEW_PARTY_SENTINEL
+    related_po_id = NEW_PARTY_SENTINEL
+    if direction == "outbound":
+        from features.orders import repo as order_repo
+        orders = order_repo.list_orders(limit=500)
+        order_choices = {NEW_PARTY_SENTINEL: "— ohne Auftrag —"}
+        for o in orders:
+            if o.get("status") in ("done", "cancelled"):
+                continue
+            c = o.get("customer") or {}
+            cname = c.get("short_name") or c.get("legal_name") or "—"
+            order_choices[o["id"]] = f"{o.get('order_number')} · {cname}"
+        related_order_id = st.selectbox(
+            "📑 An Auftrag koppeln (optional)",
+            list(order_choices.keys()),
+            format_func=lambda v: order_choices[v],
+            key="new_related_order",
+        )
+    else:
+        from features.purchase_orders import repo as po_repo
+        pos = po_repo.list_pos(limit=500)
+        po_choices = {NEW_PARTY_SENTINEL: "— ohne Bestellung —"}
+        for p in pos:
+            if p.get("status") in ("received", "cancelled"):
+                continue
+            s = p.get("supplier") or {}
+            sname = s.get("short_name") or s.get("legal_name") or "—"
+            po_choices[p["id"]] = f"{p.get('po_number')} · {sname}"
+        related_po_id = st.selectbox(
+            "🛒 An Bestellung koppeln (optional)",
+            list(po_choices.keys()),
+            format_func=lambda v: po_choices[v],
+            key="new_related_po",
+        )
+
     with st.form("create_delivery", clear_on_submit=True):
         c1, c2 = st.columns(2)
         expected_at = c1.date_input("Erwarteter Termin", value=date.today(), key="new_expected")
@@ -330,6 +358,10 @@ def _render_create_tab() -> None:
                 payload["notes"] = notes.strip()
             if internal_notes.strip():
                 payload["internal_notes"] = internal_notes.strip()
+            if direction == "outbound" and related_order_id != NEW_PARTY_SENTINEL:
+                payload["related_order_id"] = related_order_id
+            if direction == "inbound" and related_po_id != NEW_PARTY_SENTINEL:
+                payload["related_po_id"] = related_po_id
 
             try:
                 new_id = service.create_delivery(payload)
@@ -360,6 +392,23 @@ def _render_header_card(d: dict[str, Any]) -> None:
             f"Kunden **{party.get('legal_name') or '—'}**."
         )
 
+    # Smart-Buttons: Verknüpfung zu Auftrag/PO
+    related_order = d.get("related_order") or {}
+    related_po = d.get("related_po") or {}
+    if related_order.get("order_number") or related_po.get("po_number"):
+        smart_lines = []
+        if related_order.get("order_number"):
+            smart_lines.append(
+                f"📑 **Auftrag {related_order['order_number']}** "
+                f"(siehe Page **Aufträge** → Detail)"
+            )
+        if related_po.get("po_number"):
+            smart_lines.append(
+                f"🛒 **Bestellung {related_po['po_number']}** "
+                f"(siehe Page **Bestellungen** → Detail)"
+            )
+        st.info("Verknüpft mit:\n\n" + "\n\n".join(smart_lines))
+
     c1, c2, c3 = st.columns(3)
     c1.markdown(f"**Nr.**\n\n`{d.get('delivery_number') or '?'}`")
     c2.markdown(f"**{role}**\n\n{party.get('legal_name') or '—'}")
@@ -381,6 +430,15 @@ def _render_status_control(d: dict[str, Any]) -> None:
     statuses = OUTBOUND_STATUSES if direction == "outbound" else INBOUND_STATUSES
     current = d.get("status") or statuses[0]
     delivery_id = d["id"]
+
+    # Visueller Status-Stepper über der Selectbox
+    render_status_stepper(
+        statuses,
+        current,
+        STATUS_LABELS_DE,
+        STATUS_COLORS,
+        terminal_states={"cancelled", "returned", "complaint"},
+    )
 
     c1, c2 = st.columns([3, 1])
     new_status = c1.selectbox(

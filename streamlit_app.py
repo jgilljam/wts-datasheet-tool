@@ -11,7 +11,7 @@ import streamlit as st
 from core.auth import require_login
 from core.branding import apply_branding
 from core.config import LOGO_PATH
-from features import articles, datasheet, deliveries, parties, stock
+from features import articles, datasheet, deliveries, orders, parties, purchase_orders, stock
 
 
 st.set_page_config(
@@ -31,6 +31,18 @@ pages = [
         icon="📄",
         url_path="datenblatt",
         default=True,
+    ),
+    st.Page(
+        orders.render,
+        title="Aufträge",
+        icon="📑",
+        url_path="auftraege",
+    ),
+    st.Page(
+        purchase_orders.render,
+        title="Bestellungen",
+        icon="🛒",
+        url_path="bestellungen",
     ),
     st.Page(
         deliveries.render,

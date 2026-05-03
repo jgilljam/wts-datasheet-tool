@@ -67,7 +67,9 @@ def get_delivery(delivery_id: str) -> dict[str, Any] | None:
             "parties!party_id(id, legal_name, short_name, type, vat_id), "
             "source_party:parties!source_party_id(id, legal_name, short_name, type, vat_id), "
             "shipping_address:addresses!shipping_address_id(*), "
-            "billing_address:addresses!billing_address_id(*)"
+            "billing_address:addresses!billing_address_id(*), "
+            "related_order:orders!related_order_id(id, order_number, status), "
+            "related_po:purchase_orders!related_po_id(id, po_number, status)"
         )
         .eq("id", delivery_id)
         .maybe_single()
