@@ -150,54 +150,113 @@ def render_lieferschein_pdf(
     delivery: dict[str, Any],
     items: list[dict[str, Any]],
 ) -> bytes:
-    """Rendert einen Lieferschein als PDF (BytesIO).
+    """Rendert einen Lieferschein als PDF (BytesIO) im Wilspec-Layout.
 
     Args:
         delivery: dict mit allen Feldern aus `repo.get_delivery` (inkl.
                   joined `parties`, `source_party`, `shipping_address`).
         items:    Liste aus `repo.list_delivery_items`.
     """
+    from features.invoices import repo as inv_repo  # lazy import wg. cycle
+
     party = delivery.get("parties") or {}
     source_party = delivery.get("source_party")
     shipping_addr = delivery.get("shipping_address")
     direction = delivery.get("direction")
     is_dropship = bool(source_party)
+    company = inv_repo.get_company_settings()
 
-    doc_label = "Lieferschein" if direction == "outbound" else "Wareneingang"
-    recipient_label = "Empfänger" if direction == "outbound" else "Absender"
+    if direction == "outbound":
+        doc_label = "Lieferschein"
+        doc_number_label = "Lieferschein-Nr."
+        recipient_label_main = "Empfänger"
+    else:
+        doc_label = "Wareneingang"
+        doc_number_label = "Wareneingangs-Nr."
+        recipient_label_main = "Absender"
+
+    if is_dropship:
+        recipient_label_secondary = "Absender (Lieferant)"
+        secondary_party_name = source_party.get("legal_name") if source_party else ""
+        secondary_addr = None
+    else:
+        recipient_label_secondary = "Absender" if direction == "outbound" else "Empfänger (WTS)"
+        secondary_party_name = company.get("legal_name") or "Weber Trading & Service"
+        secondary_addr = {
+            "street": company.get("street") or "",
+            "zip": company.get("zip") or "",
+            "city": company.get("city") or "",
+            "country_code": company.get("country_code") or "DE",
+        }
 
     pfand_lines, pfand_total_eur = _build_pfand_summary(items)
     adr_lines = _build_adr_summary(items)
+    built_items = _build_items(items)
+
+    total_qty = 0.0
+    for it in items:
+        q = it.get("qty_actual") if it.get("qty_actual") is not None else it.get("qty_expected")
+        try:
+            total_qty += float(q or 0)
+        except (TypeError, ValueError):
+            pass
+    total_qty_str = _qty_display(total_qty) if total_qty else ""
+
+    shipping_method_label = SHIPPING_METHOD_LABELS.get(
+        delivery.get("shipping_method"), delivery.get("shipping_method") or ""
+    )
+    incoterms_str = ""
+    if delivery.get("incoterms"):
+        place = f" {delivery['incoterms_place']}" if delivery.get("incoterms_place") else ""
+        incoterms_str = f"{delivery['incoterms']}{place}"
+
+    related_order_number = ""
+    related_order = delivery.get("related_order") or {}
+    if isinstance(related_order, dict):
+        related_order_number = related_order.get("order_number") or ""
 
     context = {
         "logo_uri": _logo_uri(),
         "doc_label": doc_label,
-        "recipient_label": recipient_label,
+        "doc_number_label": doc_number_label,
+        "recipient_label_main": recipient_label_main,
+        "recipient_label_secondary": recipient_label_secondary,
+        "secondary_party_name": secondary_party_name,
+        "secondary_addr": secondary_addr,
         "today": date.today().strftime("%d.%m.%Y"),
         "termin": _format_date(delivery.get("expected_at")),
-        "shipping_method_label": SHIPPING_METHOD_LABELS.get(
-            delivery.get("shipping_method"), delivery.get("shipping_method") or ""
-        ),
+        "related_order_number": related_order_number,
         "d": delivery,
         "party": party,
         "source_party": source_party,
         "shipping_addr": shipping_addr,
         "dropshipping": is_dropship,
-        "items": _build_items(items),
+        "items": built_items,
         "pfand_lines": pfand_lines,
         "pfand_total_eur": pfand_total_eur,
         "adr_lines": adr_lines,
+        "total_qty": total_qty_str,
+        "total_packages": delivery.get("packages_count") or "",
+        "company": company,
+        "master_label_1": "Versandart",
+        "master_value_1": shipping_method_label or "—",
+        "master_label_2": "Incoterms",
+        "master_value_2": incoterms_str or "—",
+        "master_label_3": "Tracking",
+        "master_value_3": delivery.get("tracking_number") or "—",
+        "master_label_4": "Gewicht",
+        "master_value_4": (f"{delivery['total_weight_kg']} kg" if delivery.get("total_weight_kg") else "—"),
     }
 
     template = _jinja.get_template("lieferschein.html")
     html_str = template.render(**context)
 
-    css_path = TEMPLATES_DIR / "lieferschein.css"
-    css = CSS(filename=str(css_path))
+    css = CSS(filename=str(TEMPLATES_DIR / "lieferschein.css"))
+    css_beleg = CSS(filename=str(TEMPLATES_DIR / "beleg.css"))
 
     buf = BytesIO()
     HTML(string=html_str, base_url=str(TEMPLATES_DIR)).write_pdf(
         target=buf,
-        stylesheets=[css],
+        stylesheets=[css_beleg, css],
     )
     return buf.getvalue()

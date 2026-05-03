@@ -7,183 +7,246 @@
 </head>
 <body>
 
+{# ============================================================
+   HEADER — Logo links, Page-Hinweis + Titel rechts
+   ============================================================ #}
 <header class="page-header">
-  <img class="logo" src="{{ logo_uri }}" alt="WTS">
-  <div class="header-meta">
-    <div class="company">{{ company.legal_name or 'Weber Trading &amp; Service' }}</div>
-    {% if company.tagline %}
-    <div class="tagline">{{ company.tagline }}</div>
-    {% else %}
-    <div class="tagline">Industrial Trading · seit 1997</div>
-    {% endif %}
-    <div class="company-addr">
-      {{ company.street or '' }}{% if company.zip or company.city %} · {{ company.zip or '' }} {{ company.city or '' }}{% endif %}
-    </div>
+  <div class="page-hint">Seite: 1</div>
+  <div class="header-left">
+    <img class="logo" src="{{ logo_uri }}" alt="WTS">
+  </div>
+  <div class="header-right">
+    <h1 class="doc-title">{{ doc_label|upper }}</h1>
   </div>
 </header>
 
-<section class="title-row">
-  <div>
-    <div class="eyebrow">{{ doc_label }}</div>
-    <h1>{{ doc_number }}</h1>
+{# ============================================================
+   ABSENDER + META — Adresse links, Voice/Fax mittig, Beleg-Meta rechts
+   ============================================================ #}
+<section class="company-meta-row">
+  <div class="company-block">
+    <div class="company-name">{{ company.legal_name or 'Weber Trading &amp; Service' }}</div>
+    {% if company.street %}<div>{{ company.street }}</div>{% endif %}
+    {% if company.zip or company.city %}<div>{{ company.zip or '' }} {{ company.city or '' }}{% if company.country_code and company.country_code != 'DE' %}, {{ company.country_code }}{% endif %}</div>{% endif %}
   </div>
-  <div class="meta-grid">
-    <div class="cell"><div class="label">Datum</div><div class="val">{{ today }}</div></div>
-    {% if doc_date %}
-    <div class="cell"><div class="label">{{ doc_date_label }}</div><div class="val">{{ doc_date }}</div></div>
-    {% endif %}
-    {% if due_date %}
-    <div class="cell"><div class="label">{{ due_date_label }}</div><div class="val">{{ due_date }}</div></div>
-    {% endif %}
-    {% if reference %}
-    <div class="cell"><div class="label">{{ reference_label }}</div><div class="val">{{ reference }}</div></div>
-    {% endif %}
-    {% if d.incoterms %}
-    <div class="cell"><div class="label">Incoterms</div><div class="val">{{ d.incoterms }}{% if d.incoterms_place %} {{ d.incoterms_place }}{% endif %}</div></div>
-    {% endif %}
-    {% if d.payment_terms_days %}
-    <div class="cell"><div class="label">Zahlungsziel</div><div class="val">{{ d.payment_terms_days }} Tage</div></div>
-    {% endif %}
+  <div class="contact-block">
+    {% if company.phone %}<div><span class="lbl">Phone:</span> {{ company.phone }}</div>{% endif %}
+    {% if company.email %}<div><span class="lbl">Email:</span> {{ company.email }}</div>{% endif %}
   </div>
-</section>
-
-{% if dropship_note %}
-<section class="dropship-banner">
-  <strong>🚚 Streckengeschäft (Direktlieferung)</strong> — {{ dropship_note }}
-</section>
-{% endif %}
-
-{% if reverse_charge %}
-<section class="info-banner">
-  <strong>💶 Reverse-Charge</strong> — Steuerschuldnerschaft des Leistungsempfängers nach §13b UStG.
-  Nettorechnung (0% USt).
-</section>
-{% endif %}
-
-<section class="parties">
-  <div class="party-card">
-    <div class="card-label">{{ recipient_label }}</div>
-    <div class="party-name">{{ party.legal_name or "—" }}</div>
-    {% if shipping_addr %}
-    <div class="addr">
-      {% if shipping_addr.label %}<div class="addr-label">{{ shipping_addr.label }}</div>{% endif %}
-      <div>{{ shipping_addr.street or "" }}{% if shipping_addr.street_2 %}, {{ shipping_addr.street_2 }}{% endif %}</div>
-      <div>{{ (shipping_addr.zip or "") }} {{ shipping_addr.city or "" }}</div>
-      <div>{{ shipping_addr.country_code or "" }}</div>
-    </div>
-    {% endif %}
-    {% if party.vat_id %}<div class="vat">USt-IdNr.: {{ party.vat_id }}</div>{% endif %}
-  </div>
-</section>
-
-<section class="items">
-  <h2>Positionen</h2>
-  {% if items %}
-  <table class="items-table">
-    <thead>
+  <div class="meta-block">
+    <table class="meta-table">
+      <tr><td class="lbl">{{ doc_number_label }}:</td><td class="val">{{ doc_number }}</td></tr>
+      <tr><td class="lbl">{{ doc_date_label }}:</td><td class="val">{{ doc_date or today }}</td></tr>
+      {% if due_date %}
       <tr>
-        <th class="col-pos">Pos</th>
-        <th class="col-sku">SKU</th>
-        <th class="col-desc">Bezeichnung</th>
-        <th class="col-qty">Menge</th>
-        <th class="col-unit">Einheit</th>
-        <th class="col-price">{{ price_label }}</th>
-        <th class="col-disc">Rabatt</th>
-        <th class="col-tax">USt</th>
-        <th class="col-total">Summe netto</th>
+        <td class="lbl{% if due_date_warn %} warn{% endif %}">{{ due_date_label }}:</td>
+        <td class="val{% if due_date_warn %} warn{% endif %}">{{ due_date }}</td>
       </tr>
-    </thead>
-    <tbody>
+      {% endif %}
+      {% if service_date %}
+      <tr><td class="lbl">{{ service_date_label }}:</td><td class="val">{{ service_date }}</td></tr>
+      {% endif %}
+      {% if reference %}
+      <tr><td class="lbl">{{ reference_label }}:</td><td class="val">{{ reference }}</td></tr>
+      {% endif %}
+      {% if related_order_number %}
+      <tr><td class="lbl">Auftrag:</td><td class="val">{{ related_order_number }}</td></tr>
+      {% endif %}
+      {% if customer_number %}
+      <tr><td class="lbl">Kundennr.:</td><td class="val">{{ customer_number }}</td></tr>
+      {% endif %}
+    </table>
+  </div>
+</section>
+
+{# Hinweise (Storno / Reverse-Charge / Streckengeschäft) als kompakte Banner #}
+{% if storno_banner %}
+<section class="alert-banner danger">{{ storno_banner }}</section>
+{% endif %}
+{% if dropship_note %}
+<section class="alert-banner info"><strong>Streckengeschäft</strong> — {{ dropship_note }}</section>
+{% endif %}
+
+{# ============================================================
+   PARTEIEN — Bill-To und Ship-To als zwei Boxen mit Akzent-Header
+   ============================================================ #}
+<section class="parties">
+  <div class="party-box">
+    <div class="party-header">{{ recipient_label_billing }}</div>
+    <div class="party-body">
+      <div class="party-name">{{ party.legal_name or '—' }}</div>
+      {% if billing_addr %}
+      <div>{{ billing_addr.street or '' }}{% if billing_addr.street_2 %}, {{ billing_addr.street_2 }}{% endif %}</div>
+      <div>{{ billing_addr.zip or '' }} {{ billing_addr.city or '' }}{% if billing_addr.country_code and billing_addr.country_code != 'DE' %}, {{ billing_addr.country_code }}{% endif %}</div>
+      {% endif %}
+      {% if party.vat_id %}<div class="vat-line">USt-IdNr.: {{ party.vat_id }}</div>{% endif %}
+    </div>
+  </div>
+  <div class="party-box">
+    <div class="party-header">{{ recipient_label_shipping }}</div>
+    <div class="party-body">
+      <div class="party-name">{{ shipping_party_name or party.legal_name or '—' }}</div>
+      {% if shipping_addr %}
+      <div>{{ shipping_addr.street or '' }}{% if shipping_addr.street_2 %}, {{ shipping_addr.street_2 }}{% endif %}</div>
+      <div>{{ shipping_addr.zip or '' }} {{ shipping_addr.city or '' }}{% if shipping_addr.country_code and shipping_addr.country_code != 'DE' %}, {{ shipping_addr.country_code }}{% endif %}</div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{# ============================================================
+   MASTER-DATEN-ZEILE — wie Wilspec Customer P.O. | Ship VIA | Terms | VAT
+   ============================================================ #}
+<table class="master-table">
+  <thead>
+    <tr>
+      <th>{{ master_label_1 }}</th>
+      <th>{{ master_label_2 }}</th>
+      <th>{{ master_label_3 }}</th>
+      <th>{{ master_label_4 }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>{{ master_value_1 or '—' }}</td>
+      <td>{{ master_value_2 or '—' }}</td>
+      <td>{{ master_value_3 or '—' }}</td>
+      <td>{{ master_value_4 or '—' }}</td>
+    </tr>
+  </tbody>
+</table>
+
+{# ============================================================
+   ITEMS-TABELLE — Wilspec-Stil mit sichtbaren Trennlinien
+   ============================================================ #}
+<table class="items-table">
+  <thead>
+    <tr>
+      <th class="col-pos">Pos</th>
+      <th class="col-sku">SKU</th>
+      <th class="col-desc">Bezeichnung</th>
+      <th class="col-qty">Menge</th>
+      <th class="col-unit">Einheit</th>
+      <th class="col-price">{{ price_label }}</th>
+      <th class="col-disc">Rabatt</th>
+      <th class="col-tax">USt</th>
+      <th class="col-total">Summe netto</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if items %}
       {% for it in items %}
       <tr>
         <td class="col-pos">{{ it.pos_nr }}</td>
-        <td class="col-sku mono">{{ it.sku or "" }}</td>
+        <td class="col-sku mono">{{ it.sku or '' }}</td>
         <td class="col-desc">
-          {{ it.title or it.description_override or "—" }}
+          <div class="title">{{ it.title or it.description_override or '—' }}</div>
           {% if it.description_override and it.title %}<div class="sub">{{ it.description_override }}</div>{% endif %}
-          {% if it.is_dropship %}<div class="ds-mark">🚚 Direktlieferung</div>{% endif %}
+          {% if it.is_dropship %}<div class="sub mark">Direktlieferung</div>{% endif %}
         </td>
         <td class="col-qty num">{{ it.qty_display }}</td>
-        <td class="col-unit">{{ it.unit or "Stk" }}</td>
+        <td class="col-unit">{{ it.unit or 'Stk' }}</td>
         <td class="col-price num">{{ it.unit_price_eur }}</td>
         <td class="col-disc num">{% if it.discount_pct %}{{ it.discount_pct }} %{% endif %}</td>
         <td class="col-tax num">{{ it.tax_rate }} %</td>
         <td class="col-total num">{{ it.line_total_eur }}</td>
       </tr>
       {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p class="empty">Keine Positionen erfasst.</p>
-  {% endif %}
-</section>
-
-<section class="totals-block">
-  <table class="totals-table">
-    {% if discount_total_eur %}
-    <tr><td class="label">Rabatt gesamt</td><td class="num">−{{ discount_total_eur }}</td></tr>
-    {% endif %}
-    <tr><td class="label">Netto gesamt</td><td class="num">{{ net_total_eur }}</td></tr>
-    {% if tax_breakdown and tax_breakdown|length > 1 %}
-      {% for b in tax_breakdown %}
-      <tr>
-        <td class="label sub">davon Netto bei {{ b.rate_label }}</td>
-        <td class="num sub">{{ b.net_eur }}</td>
-      </tr>
-      <tr>
-        <td class="label">USt {{ b.rate_label }}</td>
-        <td class="num">{{ b.tax_eur }}</td>
-      </tr>
-      {% endfor %}
     {% else %}
-    <tr><td class="label">USt {{ tax_rate_summary }}</td><td class="num">{{ tax_total_eur }}</td></tr>
+      <tr><td colspan="9" class="empty-row">Keine Positionen erfasst.</td></tr>
     {% endif %}
-    <tr class="total"><td class="label"><strong>Brutto / Gesamt</strong></td><td class="num"><strong>{{ gross_total_eur }}</strong></td></tr>
-  </table>
-</section>
+  </tbody>
+</table>
 
-{% if d.notes %}
-<section class="block">
-  <h2>Bemerkungen</h2>
-  <p>{{ d.notes }}</p>
-</section>
+{# Customs / Tax-Hinweise als Mini-Caption unter der Tabelle #}
+{% if customs_lines %}
+<div class="customs-block">
+  {% for line in customs_lines %}
+  <div>{{ line }}</div>
+  {% endfor %}
+</div>
 {% endif %}
 
+{# ============================================================
+   FOOTER-GRID — 3 Spalten: GF-Block / Help-Block / Summen-Block
+   ============================================================ #}
+<section class="footer-grid">
+  <div class="footer-col gf-col">
+    {% if company.managing_director %}
+    <div><span class="lbl">Geschäftsführer:</span> {{ company.managing_director }}</div>
+    {% endif %}
+    {% if company.hr_register %}
+    <div>{{ company.hr_register }}</div>
+    {% endif %}
+    {% if company.tax_number %}
+    <div><span class="lbl">Steuer-Nr.:</span> {{ company.tax_number }}</div>
+    {% endif %}
+    {% if company.vat_id %}
+    <div><span class="lbl">USt-IdNr.:</span> {{ company.vat_id }}</div>
+    {% endif %}
+  </div>
+
+  <div class="footer-col help-col">
+    {% if footer_help %}
+    <div class="help-text">{{ footer_help }}</div>
+    {% endif %}
+    {% if company.phone %}<div><span class="lbl">Phone:</span> {{ company.phone }}</div>{% endif %}
+    {% if company.email %}<div><span class="lbl">Email:</span> {{ company.email }}</div>{% endif %}
+  </div>
+
+  <div class="footer-col totals-col">
+    <table class="totals-table">
+      {% if discount_total_eur %}
+      <tr><td class="lbl">Rabatt gesamt:</td><td class="val num">−{{ discount_total_eur }}</td></tr>
+      {% endif %}
+      <tr><td class="lbl">Netto:</td><td class="val num">{{ net_total_eur }}</td></tr>
+      {% if tax_breakdown and tax_breakdown|length > 1 %}
+        {% for b in tax_breakdown %}
+        <tr class="sub">
+          <td class="lbl">davon Netto {{ b.rate_label }}:</td>
+          <td class="val num">{{ b.net_eur }}</td>
+        </tr>
+        <tr>
+          <td class="lbl">USt {{ b.rate_label }}:</td>
+          <td class="val num">{{ b.tax_eur }}</td>
+        </tr>
+        {% endfor %}
+      {% else %}
+      <tr><td class="lbl">USt {{ tax_rate_summary }}:</td><td class="val num">{{ tax_total_eur }}</td></tr>
+      {% endif %}
+      <tr class="grand-total">
+        <td class="lbl">{{ total_label }}:</td>
+        <td class="val num">{{ gross_total_eur }}</td>
+      </tr>
+      {% if open_balance_eur is defined and open_balance_eur %}
+      <tr class="open-balance">
+        <td class="lbl">Offener Betrag:</td>
+        <td class="val num">{{ open_balance_eur }}</td>
+      </tr>
+      {% endif %}
+    </table>
+  </div>
+</section>
+
+{# Footer-Hint (Zahlungs-/Lieferbedingungen) #}
 {% if footer_hint %}
 <section class="footer-hint">{{ footer_hint }}</section>
 {% endif %}
 
-{% if payment_block_lines %}
-<section class="payment-block">
-  <h2>Zahlungsdetails</h2>
-  {% for line in payment_block_lines %}
-  <div class="pay-line">{{ line }}</div>
+{# ============================================================
+   BANK-BLOCK — links unten, kompakt
+   ============================================================ #}
+{% if bank_lines %}
+<section class="bank-block">
+  {% for line in bank_lines %}
+  <div>{{ line }}</div>
   {% endfor %}
 </section>
 {% endif %}
 
-{% if company and (company.tax_number or company.vat_id or company.hr_register or company.managing_director) %}
-<section class="company-footer">
-  {% if company.legal_name %}<span>{{ company.legal_name }}</span>{% endif %}
-  {% if company.managing_director %}<span> · GF: {{ company.managing_director }}</span>{% endif %}
-  {% if company.hr_register %}<span> · {{ company.hr_register }}</span>{% endif %}
-  {% if company.tax_number %}<span> · Steuer-Nr: {{ company.tax_number }}</span>{% endif %}
-  {% if company.vat_id %}<span> · USt-IdNr: {{ company.vat_id }}</span>{% endif %}
-</section>
-{% endif %}
-
-{% if show_signature %}
-<section class="signatures">
-  <div class="sig">
-    <div class="line"></div>
-    <div class="sig-label">Datum, Unterschrift {{ recipient_label }}</div>
-  </div>
-  <div class="sig">
-    <div class="line"></div>
-    <div class="sig-label">Datum, Unterschrift WTS</div>
-  </div>
-</section>
-{% endif %}
+{# ============================================================
+   PAGE-FOOTER — schmal, nur Firmenname + Seite (von WeasyPrint via @page)
+   ============================================================ #}
 
 </body>
 </html>
