@@ -36,6 +36,18 @@ def apply_branding() -> None:
             -moz-osx-font-smoothing: grayscale;
             font-feature-settings: 'cv11', 'ss01', 'ss03';
           }}
+          /* Reset für Material-Icons damit die Glyphs nicht als Rohtext erscheinen */
+          .material-symbols-outlined,
+          .material-symbols-rounded,
+          .material-symbols-sharp,
+          [class*="material-symbols"],
+          [class*="MaterialSymbols"],
+          span[data-testid*="Icon"],
+          span[data-testid*="StyledFullScreenButton"] svg + *,
+          [data-baseweb="icon"] {{
+            font-family: 'Material Symbols Outlined', 'Material Symbols Rounded',
+                         'Material Icons', sans-serif !important;
+          }}
 
           /* Wide-Layout mit selbstgesetztem Max-Width für ruhige Lesbarkeit */
           .block-container {{
@@ -215,6 +227,15 @@ def apply_branding() -> None:
             background: #143358;
             border-color: #143358;
           }}
+          /* Disabled-Buttons: Text muss auch auf Primary lesbar bleiben */
+          .stButton > button:disabled, .stFormSubmitButton > button:disabled {{
+            opacity: 0.55 !important;
+            color: white !important;
+            cursor: not-allowed;
+          }}
+          .stButton > button[kind="secondary"]:disabled, .stFormSubmitButton > button[kind="secondary"]:disabled {{
+            color: {TEXT_SECONDARY} !important;
+          }}
 
           /* st.metric — feinerer Look */
           [data-testid="stMetric"] {{
@@ -355,11 +376,25 @@ def render_header(title: str, subtitle: str) -> None:
 
 
 def render_footer() -> None:
-    """WTS-Footer mit Firmenangabe + Jahr."""
+    """WTS-Footer — Firmenname + Adresse aus company_settings + aktuelles Jahr."""
+    name = "WTS Trading & Service"
+    addr = ""
+    try:
+        from .db import supabase
+        s = supabase().table("company_settings").select(
+            "legal_name, street, zip, city"
+        ).limit(1).execute().data
+        if s:
+            row = s[0]
+            name = row.get("legal_name") or name
+            parts = [row.get("street"), f"{row.get('zip') or ''} {row.get('city') or ''}".strip()]
+            addr = " · ".join(p for p in parts if p)
+    except Exception:
+        pass
     st.markdown(
         f"""
         <div class="wts-footer">
-          <div><strong style="color: {PRIMARY};">Weber Trading & Service</strong> · Kaiserstraße 35</div>
+          <div><strong style="color: {PRIMARY};">{name}</strong>{(' · ' + addr) if addr else ''}</div>
           <div>WTS-internes Tool · {date.today().year}</div>
         </div>
         """,

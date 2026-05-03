@@ -69,9 +69,13 @@ def _format_event_text(ev: dict) -> str:
     base = _EVENT_LABEL.get(et, et.replace("_", " "))
     payload = ev.get("payload") or {}
     if et == "status_change":
-        old = payload.get("from") or payload.get("old") or "?"
-        new = payload.get("to") or payload.get("new") or "?"
-        return f"Status: {old} → {new}"
+        old = payload.get("from") or payload.get("old") or payload.get("old_status")
+        new = payload.get("to") or payload.get("new") or payload.get("new_status")
+        if old and new:
+            return f"Status: {old} → {new}"
+        if new:
+            return f"Status → {new}"
+        return "Status geändert"
     if et == "payment_recorded":
         amt = payload.get("amount_cents")
         if amt:
@@ -116,13 +120,20 @@ def _render_header_with_actions() -> None:
               "Juli", "August", "September", "Oktober", "November", "Dezember"]
     date_str = f"{weekdays[today.weekday()]}, {today.day}. {months[today.month-1]} {today.year}"
 
+    user = st.session_state.get("user") or {}
+    full_name = (user.get("full_name") or "").strip()
+    first_name = full_name.split()[0] if full_name else ""
+    if not first_name and user.get("email"):
+        first_name = user["email"].split("@")[0].split(".")[0].title()
+    name_part = f", {html_lib.escape(first_name)}" if first_name else ""
+
     head_col, btns_col = st.columns([3, 4])
     with head_col:
         st.markdown(
             f"""
             <div style="margin: 0.25rem 0 1.5rem 0;">
               <div class="wts-eyebrow" style="margin-bottom: 4px;">{html_lib.escape(date_str)}</div>
-              <h1 style="margin: 0; font-size: 1.85rem;">{_greeting()}, Julian.</h1>
+              <h1 style="margin: 0; font-size: 1.85rem;">{_greeting()}{name_part}.</h1>
             </div>
             """,
             unsafe_allow_html=True,
