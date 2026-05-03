@@ -8,7 +8,7 @@
 <body>
 
 {# ============================================================
-   HEADER — Logo + Adresse links, Voice/Fax mittig, Titel + Meta rechts
+   HEADER — Logo+Adresse links | Voice/Fax mittig | Titel+Meta rechts
    ============================================================ #}
 <header class="page-header">
   <div class="header-left">
@@ -17,15 +17,22 @@
       <div class="company-name">{{ company.legal_name or 'Weber Trading &amp; Service' }}</div>
       {% if company.street %}<div>{{ company.street }}</div>{% endif %}
       {% if company.zip or company.city %}<div>{{ company.zip or '' }} {{ company.city or '' }}{% if company.country_code and company.country_code != 'DE' %}, {{ company.country_code }}{% endif %}</div>{% endif %}
-      {% if company.country_code and company.country_code == 'DE' %}<div>Deutschland</div>{% endif %}
+      <div>{% if company.country_code == 'DE' or not company.country_code %}Deutschland{% endif %}</div>
     </div>
   </div>
   <div class="header-mid">
-    {% if company.phone %}<div><span class="lbl">Phone:</span> {{ company.phone }}</div>{% endif %}
-    {% if company.email %}<div><span class="lbl">Email:</span> {{ company.email }}</div>{% endif %}
+    {% if company.phone %}
+    <div class="contact-row"><span class="lbl">Phone:</span> <span class="val">{{ company.phone }}</span></div>
+    {% endif %}
+    {% if company.fax %}
+    <div class="contact-row"><span class="lbl">Fax:</span> <span class="val">{{ company.fax }}</span></div>
+    {% endif %}
+    {% if company.email %}
+    <div class="contact-row"><span class="lbl">Email:</span> <span class="val">{{ company.email }}</span></div>
+    {% endif %}
   </div>
   <div class="header-right">
-    <div class="page-hint">Seite: 1</div>
+    <div class="page-hint">Page: 1</div>
     <div class="doc-title">{{ doc_label }}</div>
     <table class="meta-table">
       <tr><td class="lbl">{{ doc_number_label }}:</td><td class="val">{{ doc_number }}</td></tr>
@@ -45,14 +52,14 @@
       {% if related_order_number %}
       <tr><td class="lbl">Auftrag:</td><td class="val">{{ related_order_number }}</td></tr>
       {% endif %}
-      {% if customer_number %}
-      <tr><td class="lbl">Kundennr.:</td><td class="val">{{ customer_number }}</td></tr>
-      {% endif %}
     </table>
+    {% if customer_number %}
+    <div class="customer-line"><span class="lbl">Kunden-Nr.:</span> <span class="val">{{ customer_number }}</span></div>
+    {% endif %}
   </div>
 </header>
 
-{# Hinweise als kompakte Banner #}
+{# Banner #}
 {% if storno_banner %}
 <section class="alert-banner danger">{{ storno_banner }}</section>
 {% endif %}
@@ -61,7 +68,7 @@
 {% endif %}
 
 {# ============================================================
-   PARTEIEN — Bill-To / Ship-To als zwei dezente Boxen
+   PARTEIEN — Bill-To / Ship-To
    ============================================================ #}
 <section class="parties">
   <div class="party-box">
@@ -88,7 +95,7 @@
 </section>
 
 {# ============================================================
-   MASTER-DATEN-ZEILE — Customer P.O. | Ship VIA | Terms | VAT
+   MASTER-DATEN
    ============================================================ #}
 <table class="master-table">
   <thead>
@@ -101,29 +108,28 @@
   </thead>
   <tbody>
     <tr>
-      <td>{{ master_value_1 or '—' }}</td>
-      <td>{{ master_value_2 or '—' }}</td>
-      <td>{{ master_value_3 or '—' }}</td>
-      <td>{{ master_value_4 or '—' }}</td>
+      <td>{{ master_value_1 or '' }}</td>
+      <td>{{ master_value_2 or '' }}</td>
+      <td>{{ master_value_3 or '' }}</td>
+      <td>{{ master_value_4 or '' }}</td>
     </tr>
   </tbody>
 </table>
 
 {# ============================================================
-   ITEMS-TABELLE
+   ITEMS — Item Code (SKU+Title+Sub combined) | Menge | Einh | Preis | Rab | USt | Summe
    ============================================================ #}
 <table class="items-table">
   <thead>
     <tr>
       <th class="col-pos">Pos</th>
-      <th class="col-sku">SKU</th>
-      <th class="col-desc">Bezeichnung</th>
+      <th class="col-item">Item Code</th>
       <th class="col-qty">Menge</th>
       <th class="col-unit">Einh.</th>
       <th class="col-price">{{ price_label }}</th>
       <th class="col-disc">Rab.</th>
       <th class="col-tax">USt</th>
-      <th class="col-total">Summe netto</th>
+      <th class="col-total">Betrag {{ currency_label }}</th>
     </tr>
   </thead>
   <tbody>
@@ -131,11 +137,11 @@
       {% for it in items %}
       <tr>
         <td class="col-pos">{{ it.pos_nr }}</td>
-        <td class="col-sku mono">{{ it.sku or '' }}</td>
-        <td class="col-desc">
-          <div class="title">{{ it.title or it.description_override or '—' }}</div>
-          {% if it.description_override and it.title %}<div class="sub">{{ it.description_override }}</div>{% endif %}
-          {% if it.is_dropship %}<div class="sub mark">Direktlieferung</div>{% endif %}
+        <td class="col-item">
+          {% if it.sku %}<div class="item-sku">{{ it.sku }}</div>{% endif %}
+          {% if it.title %}<div class="item-title">{{ it.title }}</div>{% endif %}
+          {% if it.description_override and it.title %}<div class="item-sub">{{ it.description_override }}</div>{% elif it.description_override %}<div class="item-title">{{ it.description_override }}</div>{% endif %}
+          {% if it.is_dropship %}<div class="item-mark">Direktlieferung</div>{% endif %}
         </td>
         <td class="col-qty num">{{ it.qty_display }}</td>
         <td class="col-unit">{{ it.unit or 'Stk' }}</td>
@@ -146,12 +152,12 @@
       </tr>
       {% endfor %}
     {% else %}
-      <tr><td colspan="9" class="empty-row">Keine Positionen erfasst.</td></tr>
+      <tr><td colspan="8" class="empty-row">Keine Positionen erfasst.</td></tr>
     {% endif %}
   </tbody>
 </table>
 
-{# Customs / Tax-Hinweise als Mini-Caption unter der Tabelle #}
+{# Customs / Tax-Hinweise plain unter der Tabelle #}
 {% if customs_lines %}
 <div class="customs-block">
   {% for line in customs_lines %}
@@ -161,64 +167,50 @@
 {% endif %}
 
 {# ============================================================
-   FOOTER-GRID — 3 Spalten: GF-Block / Help-Block / Summen-Block
+   FOOTER — drei Spalten: GF/Bank links | Help-Box mittig | Totals-Box rechts
    ============================================================ #}
 <section class="footer-grid">
   <div class="footer-col gf-col">
-    {% if company.managing_director %}
-    <div><strong>Geschäftsführer:</strong> {{ company.managing_director }}</div>
-    {% endif %}
-    {% if company.hr_register %}
-    <div>{{ company.hr_register }}</div>
-    {% endif %}
-    {% if company.tax_number %}
-    <div><strong>Steuer-Nr.:</strong> {{ company.tax_number }}</div>
-    {% endif %}
-    {% if company.vat_id %}
-    <div><strong>USt-IdNr.:</strong> {{ company.vat_id }}</div>
-    {% endif %}
+    {% if company.managing_director %}<div><strong>Geschäftsführer:</strong> {{ company.managing_director }}</div>{% endif %}
+    {% if company.hr_register %}<div>{{ company.hr_register }}</div>{% endif %}
+    {% if company.tax_office %}<div>{{ company.tax_office }}{% if company.tax_number %}, Steuer-Nr. {{ company.tax_number }}{% endif %}</div>{% elif company.tax_number %}<div><strong>Steuer-Nr.:</strong> {{ company.tax_number }}</div>{% endif %}
+    {% if company.vat_id %}<div><strong>USt-IdNr.:</strong> {{ company.vat_id }}{% if company.eori %}, EORI {{ company.eori }}{% endif %}</div>{% endif %}
     {% if bank_lines %}
-    <div class="bank-inline">
+    <div class="bank-block">
       {% for line in bank_lines %}<div>{{ line }}</div>{% endfor %}
     </div>
     {% endif %}
   </div>
 
   <div class="footer-col help-col">
-    {% if footer_help %}
-    <div class="help-text">{{ footer_help }}</div>
-    {% endif %}
-    {% if company.phone %}<div>Phone: {{ company.phone }}</div>{% endif %}
-    {% if company.email %}<div>Email: {{ company.email }}</div>{% endif %}
+    <div class="help-box">
+      {% if footer_help %}<div class="help-text">{{ footer_help }}</div>{% endif %}
+      {% if company.phone %}<div><strong>Phone:</strong> {{ company.phone }}</div>{% endif %}
+      {% if company.email %}<div><strong>Email:</strong> {{ company.email }}</div>{% endif %}
+    </div>
   </div>
 
   <div class="footer-col totals-col">
     <table class="totals-table">
       {% if discount_total_eur %}
-      <tr><td class="lbl">Rabatt gesamt:</td><td class="val num">−{{ discount_total_eur }}</td></tr>
+      <tr><td class="lbl">Rabatt gesamt</td><td class="val num">−{{ discount_total_eur }}</td></tr>
       {% endif %}
-      <tr><td class="lbl">Netto:</td><td class="val num">{{ net_total_eur }}</td></tr>
+      <tr><td class="lbl">Netto {{ currency_label }}:</td><td class="val num">{{ net_total_eur }}</td></tr>
+      <tr><td class="lbl">Versand:</td><td class="val num">0,00 €</td></tr>
       {% if tax_breakdown and tax_breakdown|length > 1 %}
         {% for b in tax_breakdown %}
-        <tr class="sub">
-          <td class="lbl">davon Netto {{ b.rate_label }}:</td>
-          <td class="val num">{{ b.net_eur }}</td>
-        </tr>
-        <tr>
-          <td class="lbl">USt {{ b.rate_label }}:</td>
-          <td class="val num">{{ b.tax_eur }}</td>
-        </tr>
+        <tr><td class="lbl">USt {{ b.rate_label }}:</td><td class="val num">{{ b.tax_eur }}</td></tr>
         {% endfor %}
       {% else %}
       <tr><td class="lbl">USt {{ tax_rate_summary }}:</td><td class="val num">{{ tax_total_eur }}</td></tr>
       {% endif %}
       <tr class="grand-total">
-        <td class="lbl">{{ total_label }}:</td>
+        <td class="lbl">{{ total_label }} {{ currency_label }}:</td>
         <td class="val num">{{ gross_total_eur }}</td>
       </tr>
       {% if open_balance_eur is defined and open_balance_eur %}
       <tr class="open-balance">
-        <td class="lbl">Offener Betrag:</td>
+        <td class="lbl">Offen:</td>
         <td class="val num">{{ open_balance_eur }}</td>
       </tr>
       {% endif %}
@@ -226,7 +218,7 @@
   </div>
 </section>
 
-{# Footer-Hint (Zahlungs-/Lieferbedingungen) #}
+{# Footer-Hint #}
 {% if footer_hint %}
 <section class="footer-hint">{{ footer_hint }}</section>
 {% endif %}
