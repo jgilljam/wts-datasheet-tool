@@ -110,10 +110,9 @@
   <thead>
     <tr>
       <th class="col-pos">Pos</th>
-      <th class="col-sku">SKU</th>
-      <th class="col-desc">Bezeichnung</th>
+      <th class="col-item">Item Code</th>
       <th class="col-qty">Menge</th>
-      <th class="col-unit">Einheit</th>
+      <th class="col-unit">Einh.</th>
       <th class="col-batch">Charge / MHD</th>
     </tr>
   </thead>
@@ -122,11 +121,11 @@
       {% for it in items %}
       <tr>
         <td class="col-pos">{{ it.pos_nr }}</td>
-        <td class="col-sku mono">{{ it.sku or '' }}</td>
-        <td class="col-desc">
-          <div class="title">{{ it.title or it.description_override or '—' }}</div>
-          {% if it.description_override and it.title %}<div class="sub">{{ it.description_override }}</div>{% endif %}
-          {% if it.adr_un_nr %}<div class="sub mark">⚠ ADR {{ it.adr_un_nr }} · Klasse {{ it.adr_class or '?' }}</div>{% endif %}
+        <td class="col-item">
+          {% if it.sku %}<div class="item-sku">{{ it.sku }}</div>{% endif %}
+          {% if it.title %}<div class="item-title">{{ it.title }}</div>{% endif %}
+          {% if it.description_override and it.title %}<div class="item-sub">{{ it.description_override }}</div>{% elif it.description_override %}<div class="item-title">{{ it.description_override }}</div>{% endif %}
+          {% if it.adr_un_nr %}<div class="item-mark">⚠ ADR {{ it.adr_un_nr }} · Klasse {{ it.adr_class or '?' }}</div>{% endif %}
         </td>
         <td class="col-qty num">{{ it.qty_display }}</td>
         <td class="col-unit">{{ it.unit or 'Stk' }}</td>
@@ -134,7 +133,7 @@
       </tr>
       {% endfor %}
     {% else %}
-      <tr><td colspan="6" class="empty-row">Keine Positionen erfasst.</td></tr>
+      <tr><td colspan="5" class="empty-row">Keine Positionen erfasst.</td></tr>
     {% endif %}
   </tbody>
 </table>

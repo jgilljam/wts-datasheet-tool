@@ -2,16 +2,15 @@
    Lieferschein-Spezifisches — ergänzt beleg.css
    ============================================================ */
 
-/* Items-Tabelle: 6 Spaltenbreite überschreiben */
+/* Items-Tabelle Lieferschein: 5-Spalten-Layout — keine Preise, dafür Charge/MHD */
 .items-table.ls-items .col-pos   { width: 5%;  }
-.items-table.ls-items .col-sku   { width: 14%; }
-.items-table.ls-items .col-desc  { width: 41%; }
-.items-table.ls-items .col-qty   { width: 9%;  }
-.items-table.ls-items .col-unit  { width: 8%;  }
-.items-table.ls-items .col-batch { width: 23%; }
+.items-table.ls-items .col-item  { width: 50%; text-align: left; }
+.items-table.ls-items .col-qty   { width: 10%; }
+.items-table.ls-items .col-unit  { width: 10%; }
+.items-table.ls-items .col-batch { width: 25%; text-align: left; }
 .items-table.ls-items .col-batch {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 7.5pt;
+  font-family: "Courier New", "Courier", monospace;
+  font-size: 7.2pt;
   white-space: nowrap;
 }
 
