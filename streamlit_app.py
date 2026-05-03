@@ -23,6 +23,7 @@ from features import (
     parties,
     purchase_orders,
     quotations,
+    settings,
     stock,
 )
 
@@ -110,6 +111,12 @@ pages_map = {
         title="Datenblatt",
         icon="📋",
         url_path="datenblatt",
+    ),
+    "settings": st.Page(
+        settings.render,
+        title="Einstellungen",
+        icon="⚙️",
+        url_path="einstellungen",
     ),
 }
 
