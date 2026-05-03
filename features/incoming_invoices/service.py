@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from core.audit import log_event
@@ -254,7 +254,7 @@ def update_status(invoice_id: str, new_status: str, comment: str | None = None) 
         )
     extra: dict[str, Any] = {"status": new_status}
     if new_status == "paid":
-        extra["paid_at"] = datetime.utcnow().isoformat() + "Z"
+        extra["paid_at"] = datetime.now(timezone.utc).isoformat()
     supabase().table("incoming_invoices").update(extra).eq("id", invoice_id).execute()
     _log(invoice_id, "status_change", {
         "old_status": old_status,

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any
 
 import streamlit as st
@@ -80,11 +80,28 @@ def update_status(delivery_id: str, new_status: str, comment: str | None = None)
         .table("deliveries")
         .select("status, direction, related_order_id, related_po_id")
         .eq("id", delivery_id)
-        .single()
+        .maybe_single()
         .execute()
     )
+    if not cur.data:
+        raise ValueError(f"Lieferung {delivery_id} nicht gefunden.")
     old_status = cur.data["status"]
     direction = cur.data["direction"]
+    if old_status == new_status:
+        return {"booked": 0, "parent_updated": None}
+
+    # Status-Whitelist je nach Richtung
+    from .constants import INBOUND_ALLOWED_TRANSITIONS, OUTBOUND_ALLOWED_TRANSITIONS
+    transitions = (
+        INBOUND_ALLOWED_TRANSITIONS if direction == "inbound"
+        else OUTBOUND_ALLOWED_TRANSITIONS
+    )
+    allowed = transitions.get(old_status, set())
+    if new_status not in allowed:
+        raise PermissionError(
+            f"Status-Übergang '{old_status}' → '{new_status}' nicht erlaubt "
+            f"({direction}). Mögliche Folge-Stati: {sorted(allowed) or 'keine (terminal)'}."
+        )
 
     supabase().table("deliveries").update({"status": new_status}).eq("id", delivery_id).execute()
     _log_event(delivery_id, "status_change", {
@@ -339,7 +356,7 @@ def lock_delivery(delivery_id: str) -> None:
         shipping_address_id=cur.data.get("shipping_address_id"),
     )
     supabase().table("deliveries").update({
-        "locked_at": datetime.utcnow().isoformat() + "Z",
+        "locked_at": datetime.now(timezone.utc).isoformat(),
         **snapshots,
     }).eq("id", delivery_id).execute()
     _log_event(delivery_id, "locked", {})

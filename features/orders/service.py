@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any
 
 from core.audit import log_event
@@ -96,7 +96,7 @@ def lock_order(order_id: str) -> None:
         shipping_address_id=cur.data.get("shipping_address_id"),
     )
     supabase().table("orders").update({
-        "locked_at": datetime.utcnow().isoformat() + "Z",
+        "locked_at": datetime.now(timezone.utc).isoformat(),
         **snapshots,
     }).eq("id", order_id).execute()
     _log(order_id, "locked", {})

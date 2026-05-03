@@ -15,6 +15,36 @@ OUTBOUND_STATUSES = [
     "returned", "cancelled",
 ]
 
+# Erlaubte Übergänge (App-seitig enforced — DB lässt Text frei).
+# Forward-Flow + jederzeit cancelled erlaubt.
+INBOUND_ALLOWED_TRANSITIONS: dict[str, set[str]] = {
+    "announced":         {"ordered", "confirmed", "cancelled"},
+    "ordered":           {"confirmed", "in_production", "shipped", "cancelled"},
+    "confirmed":         {"in_production", "shipped", "in_transit", "cancelled"},
+    "in_production":     {"shipped", "in_transit", "cancelled"},
+    "shipped":           {"in_transit", "arrived", "partial_received", "received", "cancelled"},
+    "in_transit":        {"arrived", "partial_received", "received", "cancelled"},
+    "arrived":           {"partial_received", "received", "inspected", "complaint", "cancelled"},
+    "partial_received":  {"received", "inspected", "complaint", "cancelled"},
+    "received":          {"inspected", "stored", "complaint", "cancelled"},
+    "inspected":         {"stored", "complaint", "cancelled"},
+    "stored":            {"complaint"},
+    "complaint":         {"received", "stored", "cancelled"},
+    "cancelled":         set(),
+}
+
+OUTBOUND_ALLOWED_TRANSITIONS: dict[str, set[str]] = {
+    "draft":              {"picking", "cancelled"},
+    "picking":            {"packed", "ready_for_pickup", "cancelled"},
+    "packed":             {"ready_for_pickup", "handed_to_carrier", "cancelled"},
+    "ready_for_pickup":   {"handed_to_carrier", "in_transit", "delivered", "cancelled"},
+    "handed_to_carrier":  {"in_transit", "delivered", "returned", "cancelled"},
+    "in_transit":         {"delivered", "returned", "cancelled"},
+    "delivered":          {"returned"},
+    "returned":           set(),
+    "cancelled":          set(),
+}
+
 STATUS_LABELS_DE = {
     # inbound
     "announced": "Angekündigt",

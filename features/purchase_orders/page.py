@@ -602,6 +602,36 @@ def _render_items_editor(p: dict[str, Any]) -> None:
         st.rerun()
 
 
+def _render_linked_inbox_mails(p: dict[str, Any]) -> None:
+    """Zeigt Posteingang-Mails, die auf diese Bestellung verlinkt wurden (AB)."""
+    from core.db import supabase
+    from core.utils import format_date
+    rows = (
+        supabase().table("incoming_mails")
+        .select("id, subject, from_email, received_at, ai_confidence")
+        .eq("linked_beleg_type", "purchase_order")
+        .eq("linked_beleg_id", p["id"])
+        .order("received_at", desc=True)
+        .execute().data
+    ) or []
+    if not rows:
+        return
+    pages = st.session_state.get("__wts_pages", {})
+    with st.container(border=True):
+        st.markdown(f"#### 📬 Verlinkte Mails ({len(rows)})")
+        for r in rows:
+            cols = st.columns([4, 2, 1])
+            cols[0].markdown(
+                f"**{(r.get('subject') or '(kein Betreff)')[:70]}**  \n"
+                f"_{r.get('from_email') or '?'}_"
+            )
+            cols[1].caption(format_date(r.get("received_at")) or "")
+            if cols[2].button("→", key=f"po_to_inbox_{r['id']}", help="Im Posteingang öffnen"):
+                if pages.get("inbox"):
+                    st.session_state["inbox_focus_id"] = r["id"]
+                    st.switch_page(pages["inbox"])
+
+
 def _render_supplier_confirmation(p: dict[str, Any]) -> None:
     """Lieferanten-Bestätigung erfassen (AB-Nr + bestätigter Termin)."""
     if (p.get("status") or "draft") not in ("sent", "confirmed", "in_production"):
@@ -707,6 +737,7 @@ def _render_detail_tab() -> None:
     )
     _render_action_buttons(p)
     _render_supplier_confirmation(p)
+    _render_linked_inbox_mails(p)
     st.divider()
 
     st.markdown("### Positionen")

@@ -292,8 +292,13 @@ def create_invoice_from_order(order_id: str, *, mode: str = "complete") -> str:
     order = order_repo.get_order(order_id)
     if not order:
         raise ValueError(f"Auftrag {order_id} nicht gefunden")
-    if order.get("status") in ("draft",):
-        raise PermissionError("Auftrag muss mindestens 'confirmed' sein für Rechnung.")
+    # Whitelist: nur „lebende" Aufträge dürfen Rechnungen erzeugen
+    _allowed = {"confirmed", "in_production", "partial", "shipped", "done"}
+    if order.get("status") not in _allowed:
+        raise PermissionError(
+            f"Auftrag hat Status '{order.get('status')}'. "
+            f"Rechnung nur möglich aus: {sorted(_allowed)}."
+        )
 
     order_items = order_repo.list_order_items(order_id)
     customer = order.get("customer") or {}

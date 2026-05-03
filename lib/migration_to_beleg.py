@@ -91,9 +91,15 @@ def import_order(
         )
 
     from features.orders import service as order_service
+    # Original-Bestelldatum aus sevDesk respektieren falls geliefert,
+    # sonst heute (für reine Migration ohne Datum).
+    ordered_at = _parse_date_iso(so.get("original_ordered_at") or so.get("ordered_at")) or date.today()
+    if isinstance(ordered_at, str):
+        from datetime import datetime as _dt
+        ordered_at = _dt.fromisoformat(ordered_at).date()
     order_payload: dict[str, Any] = {
         "customer_id": customer_id,
-        "ordered_at": date.today(),
+        "ordered_at": ordered_at,
         "status": "draft",
         "customer_reference": so.get("customer_reference") or None,
         "notes": ((so.get("notes") or "").strip() + f"\n\n{notes_prefix}").strip(),
@@ -127,11 +133,14 @@ def import_order(
         if requested_date:
             item_row["expected_delivery_date"] = requested_date
         items_input.append(item_row)
+    items_failed = None
+    items_persisted = 0
     if items_input:
         try:
             order_service.replace_items(order_id, items_input)
-        except Exception:
-            pass
+            items_persisted = len(items_input)
+        except Exception as e:
+            items_failed = str(e)
 
     from core.db import supabase
     order_row = (
@@ -139,13 +148,17 @@ def import_order(
         .maybe_single().execute().data
     ) or {}
 
-    return {
+    result = {
         "order_id": order_id,
         "order_number": order_row.get("order_number") or "",
         "customer_id": customer_id,
         "customer_name": raw_name or so.get("customer_name") or "(unbekannt)",
-        "items_count": len(items_input),
+        "items_count": items_persisted,
+        "items_attempted": len(items_input),
     }
+    if items_failed:
+        result["items_error"] = items_failed
+    return result
 
 
 def import_orders_batch(

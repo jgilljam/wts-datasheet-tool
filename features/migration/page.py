@@ -72,13 +72,24 @@ def _render_results(results: list[dict[str, Any]]) -> None:
                 {
                     "Auftrag-Nr": r.get("order_number") or "",
                     "Kunde": r.get("customer_name") or "",
-                    "Positionen": r.get("items_count") or 0,
+                    "Positionen": (
+                        f"{r.get('items_count', 0)}/{r.get('items_attempted', 0)}"
+                        if r.get('items_attempted') else r.get('items_count', 0)
+                    ),
+                    "Items-Fehler": r.get("items_error") or "",
                 }
                 for r in ok
             ]),
             use_container_width=True,
             hide_index=True,
         )
+        partial = [r for r in ok if r.get("items_error")]
+        if partial:
+            st.warning(
+                f"⚠ {len(partial)} Auftrag/Aufträge wurden angelegt, aber "
+                "die Positionen konnten nicht alle übernommen werden — siehe "
+                "Spalte 'Items-Fehler'. Trag die Items im Auftrag-Detail nach."
+            )
     if fail:
         st.error(f"✗ {len(fail)} Eintrag/Einträge konnten nicht importiert werden:")
         for r in fail:

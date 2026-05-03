@@ -45,7 +45,7 @@ ORDER_DONE_STATUSES = {"done", "cancelled"}
 ORDER_NEXT_ACTION = {
     "draft":         ("confirmed",     "✓ Bestätigen"),
     "confirmed":     ("in_production", "🔧 In Produktion setzen"),
-    "in_production": ("shipped",       "📦 Geliefert markieren"),
+    "in_production": ("partial",       "📦 Teilgeliefert markieren"),
     "partial":       ("shipped",       "📦 Komplett geliefert markieren"),
     "shipped":       ("done",          "✓ Abschließen"),
 }

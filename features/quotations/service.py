@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from core.audit import log_event
@@ -84,7 +84,7 @@ def update_status(quotation_id: str, new_status: str, comment: str | None = None
 
     extra: dict[str, Any] = {"status": new_status}
     if new_status == "rejected":
-        extra["rejected_at"] = datetime.utcnow().isoformat() + "Z"
+        extra["rejected_at"] = datetime.now(timezone.utc).isoformat()
 
     # GoBD-Snapshot beim ersten Versand einfrieren — Angebote sind zwar keine
     # steuerbindenden Belege, aber für Konsistenz halten wir die Adresse stabil
@@ -191,6 +191,13 @@ def convert_to_order(quotation_id: str) -> str:
         raise ValueError(f"Angebot {quotation_id} nicht gefunden")
     if q.get("converted_to_order_id"):
         raise ValueError(f"Angebot {q['quotation_number']} wurde bereits konvertiert.")
+    # Status-Whitelist: nur versendete oder akzeptierte Angebote dürfen in Auftrag.
+    # Drafts müssen erst versendet/akzeptiert werden, sonst umgeht man den Versand-Audit.
+    if q.get("status") not in ("sent", "accepted"):
+        raise ValueError(
+            f"Angebot {q['quotation_number']} hat Status '{q.get('status')}'. "
+            f"Nur versendete oder akzeptierte Angebote können in Aufträge gewandelt werden."
+        )
 
     items = repo.list_quotation_items(quotation_id)
 
@@ -232,7 +239,7 @@ def convert_to_order(quotation_id: str) -> str:
     supabase().table("quotations").update({
         "status": "converted",
         "converted_to_order_id": order_id,
-        "converted_at": datetime.utcnow().isoformat() + "Z",
+        "converted_at": datetime.now(timezone.utc).isoformat(),
     }).eq("id", quotation_id).execute()
 
     _log(quotation_id, "converted", {
@@ -245,7 +252,7 @@ def reject_quotation(quotation_id: str, reason: str | None = None) -> None:
     """Markiert das Angebot als abgelehnt."""
     supabase().table("quotations").update({
         "status": "rejected",
-        "rejected_at": datetime.utcnow().isoformat() + "Z",
+        "rejected_at": datetime.now(timezone.utc).isoformat(),
         "rejected_reason": reason,
     }).eq("id", quotation_id).execute()
     _log(quotation_id, "rejected", {"reason": reason})

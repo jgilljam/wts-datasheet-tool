@@ -472,12 +472,13 @@ def convert_mail_to_order(
         if requested_date:
             item_row["expected_delivery_date"] = requested_date
         items_input.append(item_row)
+    items_error: str | None = None
     if items_input:
         try:
             order_service.replace_items(order_id, items_input)
-        except Exception:
-            # bei Items-Fehler: Order trotzdem behalten, Items werden manuell eingefügt
-            pass
+        except Exception as e:
+            # Order bleibt erhalten, aber Hinweis im notes-Feld + Audit-Log
+            items_error = str(e)
 
     # 4. Mail verlinken
     supabase().table("incoming_mails").update({
@@ -487,6 +488,21 @@ def convert_mail_to_order(
         "linked_by": actor_email,
         "status": "linked",
     }).eq("id", mail_id).execute()
+
+    if items_error:
+        # In notes vermerken, damit User es im Auftrag sieht
+        try:
+            cur = supabase().table("orders").select("notes").eq("id", order_id).maybe_single().execute().data
+            old_notes = (cur or {}).get("notes") or ""
+            supabase().table("orders").update({
+                "notes": (old_notes + f"\n\n⚠ Items-Import fehlgeschlagen: {items_error[:200]}").strip()
+            }).eq("id", order_id).execute()
+        except Exception:
+            pass
+        raise RuntimeError(
+            f"Auftrag {order_id[:8]}… angelegt, aber {len(items_input)} Position(en) konnten "
+            f"nicht eingefügt werden: {items_error}. Bitte Items im Auftrag-Detail nachtragen."
+        )
 
     return order_id
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from core.audit import log_event
@@ -129,7 +129,7 @@ def create_dunning(invoice_id: str, level: int, notes: str | None = None) -> str
 
     supabase().table("invoices").update({
         "current_dunning_level": level,
-        "last_dunning_at": datetime.utcnow().isoformat() + "Z",
+        "last_dunning_at": datetime.now(timezone.utc).isoformat(),
     }).eq("id", invoice_id).execute()
 
     _log(invoice_id, "dunning_sent", {
