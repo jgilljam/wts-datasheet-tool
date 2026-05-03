@@ -17,6 +17,7 @@ from features import (
     datasheet,
     deliveries,
     dunning,
+    incoming_invoices,
     invoices,
     orders,
     parties,
@@ -79,6 +80,12 @@ pages_map = {
         title="OP-Liste",
         icon="💼",
         url_path="op-liste",
+    ),
+    "incoming_invoices": st.Page(
+        incoming_invoices.render,
+        title="Eingangsrechnungen",
+        icon="📥",
+        url_path="eingangsrechnungen",
     ),
     "stock": st.Page(
         stock.render,
