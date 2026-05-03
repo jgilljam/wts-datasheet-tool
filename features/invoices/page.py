@@ -149,16 +149,17 @@ def _render_list_tab() -> None:
             pass
         st.session_state["__overdue_check_done"] = True
 
-    c1, c2 = st.columns([3, 2])
     default_open = [s for s in INVOICE_STATUSES if s not in INVOICE_DONE_STATUSES]
-    statuses = c1.multiselect(
+    if "invoices_list_statuses" not in st.session_state:
+        st.session_state["invoices_list_statuses"] = default_open
+    statuses = st.pills(
         "Status",
         INVOICE_STATUSES,
-        default=default_open,
+        selection_mode="multi",
         format_func=lambda v: INVOICE_STATUS_LABELS.get(v, v),
         key="invoices_list_statuses",
     )
-    search = c2.text_input("Suche (Nr., Best.-Nr., Notiz)", "", key="invoices_list_search")
+    search = st.text_input("Suche (Nr., Best.-Nr., Notiz)", "", key="invoices_list_search")
 
     try:
         rows = repo.list_invoices(

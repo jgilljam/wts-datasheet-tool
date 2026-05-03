@@ -134,24 +134,28 @@ def _table(rows: list[dict[str, Any]]) -> None:
 
 
 def _render_list_tab() -> None:
-    c1, c2, c3 = st.columns([2, 3, 2])
-    direction = c1.selectbox(
+    c1, c2 = st.columns([1, 3])
+    direction = c1.pills(
         "Richtung",
         ["beide", "outbound", "inbound"],
+        selection_mode="single",
+        default="beide",
         format_func=lambda v: DIRECTION_LABELS[v],
         key="list_direction",
     )
 
     all_statuses = sorted(set(OUTBOUND_STATUSES + INBOUND_STATUSES))
     default_open = [s for s in all_statuses if s not in DONE_STATUSES]
-    statuses = c2.multiselect(
+    if "list_statuses" not in st.session_state:
+        st.session_state["list_statuses"] = default_open
+    statuses = c2.pills(
         "Status",
         all_statuses,
-        default=default_open,
+        selection_mode="multi",
         format_func=lambda v: STATUS_LABELS_DE.get(v, v),
         key="list_statuses",
     )
-    search = c3.text_input("Suche (Nr., Tracking, Ref, Notiz)", "", key="list_search")
+    search = st.text_input("Suche (Nr., Tracking, Ref, Notiz)", "", key="list_search")
 
     directions = None if direction == "beide" else [direction]
 

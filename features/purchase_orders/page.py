@@ -114,16 +114,17 @@ def _table(rows: list[dict[str, Any]]) -> None:
 
 
 def _render_list_tab() -> None:
-    c1, c2 = st.columns([3, 2])
     default_open = [s for s in PO_STATUSES if s not in PO_DONE_STATUSES]
-    statuses = c1.multiselect(
+    if "po_list_statuses" not in st.session_state:
+        st.session_state["po_list_statuses"] = default_open
+    statuses = st.pills(
         "Status",
         PO_STATUSES,
-        default=default_open,
+        selection_mode="multi",
         format_func=lambda v: PO_STATUS_LABELS.get(v, v),
         key="po_list_statuses",
     )
-    search = c2.text_input("Suche (Nr., AB-Nr, Notiz)", "", key="po_list_search")
+    search = st.text_input("Suche (Nr., AB-Nr, Notiz)", "", key="po_list_search")
 
     try:
         rows = repo.list_pos(
