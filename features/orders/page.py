@@ -78,6 +78,7 @@ def _table(rows: list[dict[str, Any]]) -> None:
         return
     today = date.today()
     data: list[dict[str, Any]] = []
+    ids: list[str] = []
     for r in rows:
         c = r.get("customer") or {}
         due = parse_date(r.get("due_date"))
@@ -90,6 +91,7 @@ def _table(rows: list[dict[str, Any]]) -> None:
                 urgency = "🔥 heute"
             elif delta <= 7:
                 urgency = f"in {delta} Tagen"
+        ids.append(r["id"])
         data.append({
             "Nr.": r.get("order_number") or "",
             "Kunde": c.get("short_name") or c.get("legal_name") or "—",
@@ -101,10 +103,13 @@ def _table(rows: list[dict[str, Any]]) -> None:
             "Status": ORDER_STATUS_LABELS.get(r.get("status"), r.get("status") or ""),
         })
     df = pd.DataFrame(data)
-    st.dataframe(
+    sel = st.dataframe(
         df,
         use_container_width=True,
         hide_index=True,
+        on_select="rerun",
+        selection_mode="multi-row",
+        key="orders_list_table",
         column_config={
             "Nr.": st.column_config.TextColumn(width="small"),
             "Datum": st.column_config.TextColumn(width="small"),
@@ -113,6 +118,79 @@ def _table(rows: list[dict[str, Any]]) -> None:
             "Status": st.column_config.TextColumn(width="small"),
         },
     )
+    selected_indices = (sel.selection.rows if sel and sel.selection else []) or []
+    if selected_indices:
+        _render_bulk_actions([(ids[i], rows[i]) for i in selected_indices])
+
+
+def _render_bulk_actions(selected: list[tuple[str, dict[str, Any]]]) -> None:
+    """Bulk-Aktionen für markierte Aufträge."""
+    n = len(selected)
+    box = st.container(border=True)
+    with box:
+        st.markdown(f"**{n} Auftrag(e) markiert**")
+        c1, c2, c3 = st.columns([2, 2, 2])
+
+        # Bulk-Bestätigen: nur Drafts kommen in Frage
+        drafts = [(oid, o) for oid, o in selected if o.get("status") == "draft"]
+        if c1.button(
+            f"✓ {len(drafts)} Entwurf/Entwürfe bestätigen",
+            disabled=not drafts,
+            key="bulk_orders_confirm",
+            use_container_width=True,
+            type="primary",
+        ):
+            errors: list[str] = []
+            for oid, _ in drafts:
+                try:
+                    service.update_status(oid, "confirmed", comment="Bulk-Bestätigung")
+                except Exception as exc:
+                    errors.append(f"{oid[:8]}…: {exc}")
+            if errors:
+                st.error("Fehler bei: " + " · ".join(errors))
+            else:
+                st.toast(f"✓ {len(drafts)} Auftrag/Aufträge bestätigt", icon="✓")
+            st.rerun()
+
+        # Bulk-In-Produktion-Setzen: alle confirmed
+        confirmed = [(oid, o) for oid, o in selected if o.get("status") == "confirmed"]
+        if c2.button(
+            f"🔧 {len(confirmed)} → In Produktion",
+            disabled=not confirmed,
+            key="bulk_orders_in_prod",
+            use_container_width=True,
+        ):
+            errors = []
+            for oid, _ in confirmed:
+                try:
+                    service.update_status(oid, "in_production", comment="Bulk-Update")
+                except Exception as exc:
+                    errors.append(f"{oid[:8]}…: {exc}")
+            if errors:
+                st.error("Fehler bei: " + " · ".join(errors))
+            else:
+                st.toast(f"🔧 {len(confirmed)} → In Produktion", icon="✓")
+            st.rerun()
+
+        # Bulk-Abschließen: alle shipped
+        shipped = [(oid, o) for oid, o in selected if o.get("status") == "shipped"]
+        if c3.button(
+            f"✓ {len(shipped)} Abschließen",
+            disabled=not shipped,
+            key="bulk_orders_done",
+            use_container_width=True,
+        ):
+            errors = []
+            for oid, _ in shipped:
+                try:
+                    service.update_status(oid, "done", comment="Bulk-Abschluss")
+                except Exception as exc:
+                    errors.append(f"{oid[:8]}…: {exc}")
+            if errors:
+                st.error("Fehler bei: " + " · ".join(errors))
+            else:
+                st.toast(f"✓ {len(shipped)} abgeschlossen", icon="✓")
+            st.rerun()
 
 
 def _render_list_tab() -> None:

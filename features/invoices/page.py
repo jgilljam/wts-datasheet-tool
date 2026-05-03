@@ -90,6 +90,7 @@ def _table(rows: list[dict[str, Any]]) -> None:
         return
     today = date.today()
     data: list[dict[str, Any]] = []
+    ids: list[str] = []
     for r in rows:
         c = r.get("customer") or {}
         order = r.get("related_order") or {}
@@ -113,6 +114,7 @@ def _table(rows: list[dict[str, Any]]) -> None:
         paid = int(r.get("paid_amount_cents") or 0)
         offen = max(0, brutto - paid)
 
+        ids.append(r["id"])
         data.append({
             "Nr.": nr_display,
             "Kunde": c.get("short_name") or c.get("legal_name") or "—",
@@ -125,10 +127,13 @@ def _table(rows: list[dict[str, Any]]) -> None:
             "Dringlichkeit": urgency,
         })
     df = pd.DataFrame(data)
-    st.dataframe(
+    sel = st.dataframe(
         df,
         use_container_width=True,
         hide_index=True,
+        on_select="rerun",
+        selection_mode="multi-row",
+        key="invoices_list_table",
         column_config={
             "Nr.": st.column_config.TextColumn(width="medium"),
             "Datum": st.column_config.TextColumn(width="small"),
@@ -138,6 +143,66 @@ def _table(rows: list[dict[str, Any]]) -> None:
             "Offen": st.column_config.TextColumn(width="small"),
         },
     )
+    selected_indices = (sel.selection.rows if sel and sel.selection else []) or []
+    if selected_indices:
+        _render_bulk_actions([(ids[i], rows[i]) for i in selected_indices])
+
+
+def _render_bulk_actions(selected: list[tuple[str, dict[str, Any]]]) -> None:
+    """Bulk-Aktionen für markierte Rechnungen — Zahlung erfassen für alle offenen."""
+    n = len(selected)
+    payable = [
+        (iid, inv) for iid, inv in selected
+        if inv.get("status") in ("issued", "partially_paid", "overdue")
+    ]
+    box = st.container(border=True)
+    with box:
+        st.markdown(f"**{n} Rechnung(en) markiert**")
+        c1, c2 = st.columns([3, 2])
+
+        # Bulk: alle offenen als "voll bezahlt" markieren (record_payment mit Restbetrag)
+        total_open = 0
+        for _, inv in payable:
+            brutto = int(inv.get("total_net_cents") or 0) + int(inv.get("tax_total_cents") or 0)
+            paid = int(inv.get("paid_amount_cents") or 0)
+            total_open += max(0, brutto - paid)
+
+        if c1.button(
+            f"✓ {len(payable)} Rechnung(en) als bezahlt markieren ({cents_to_eur(total_open)})",
+            disabled=not payable,
+            key="bulk_inv_paid",
+            use_container_width=True,
+            type="primary",
+        ):
+            errors: list[str] = []
+            for iid, inv in payable:
+                brutto = int(inv.get("total_net_cents") or 0) + int(inv.get("tax_total_cents") or 0)
+                paid = int(inv.get("paid_amount_cents") or 0)
+                rest = max(0, brutto - paid)
+                if rest <= 0:
+                    continue
+                try:
+                    service.record_payment(iid, rest, paid_at=date.today())
+                except Exception as exc:
+                    errors.append(f"{inv.get('invoice_number') or iid[:8]}: {exc}")
+            if errors:
+                st.error("Fehler: " + " · ".join(errors))
+            else:
+                st.toast(
+                    f"💶 {len(payable)} Rechnung(en) als bezahlt verbucht ({cents_to_eur(total_open)})",
+                    icon="✓",
+                )
+            st.rerun()
+
+        # Bulk: Mailto-Liste mit Zahlungserinnerung für überfällige
+        overdue = [
+            (iid, inv) for iid, inv in selected
+            if inv.get("status") == "overdue"
+        ]
+        if overdue:
+            c2.caption(f"📧 {len(overdue)} überfällig — Mahnungen einzeln im Detail.")
+        else:
+            c2.caption(" ")
 
 
 def _render_list_tab() -> None:
