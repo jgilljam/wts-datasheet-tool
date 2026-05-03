@@ -20,6 +20,7 @@ from features import (
     orders,
     parties,
     purchase_orders,
+    quotations,
     stock,
 )
 
@@ -41,6 +42,12 @@ pages_map = {
         icon="🏠",
         url_path="dashboard",
         default=True,
+    ),
+    "quotations": st.Page(
+        quotations.render,
+        title="Angebote",
+        icon="📨",
+        url_path="angebote",
     ),
     "orders": st.Page(
         orders.render,

@@ -230,6 +230,95 @@ def _customs_lines_from_breakdown(tax_breakdown: list[dict[str, str]]) -> list[s
 
 
 # =====================================================================
+#  Angebot
+# =====================================================================
+
+def render_angebot_pdf(quotation: dict[str, Any], items: list[dict[str, Any]]) -> bytes:
+    """Rendert ein Angebot als PDF.
+
+    Args:
+        quotation: dict aus `features.quotations.repo.get_quotation` (inkl. customer,
+                   shipping/billing_address).
+        items: aus `features.quotations.repo.list_quotation_items`.
+    """
+    from features.invoices import repo as inv_repo  # lazy import wg. cycle
+
+    customer = quotation.get("customer") or {}
+    shipping_addr = quotation.get("shipping_address")
+    billing_addr = quotation.get("billing_address") or shipping_addr
+    rev_charge = bool(customer.get("is_reverse_charge_eligible"))
+
+    company = inv_repo.get_company_settings()
+    built = _build_items(items)
+    totals = _build_totals(items, quotation)
+
+    hint_parts = [
+        f"Dieses Angebot ist gültig bis {_format_date(quotation.get('valid_until'))}.",
+    ]
+    if quotation.get("payment_terms_days"):
+        hint_parts.append(f"Zahlungsziel bei Auftragserteilung: netto {quotation['payment_terms_days']} Tage.")
+    if rev_charge:
+        hint_parts.append(
+            "Steuerschuldnerschaft des Leistungsempfängers (Reverse-Charge nach §13b UStG)."
+        )
+    if quotation.get("incoterms"):
+        place = f" {quotation.get('incoterms_place')}" if quotation.get("incoterms_place") else ""
+        hint_parts.append(f"Lieferbedingungen: Incoterms 2020 {quotation['incoterms']}{place}.")
+    hint_parts.append(
+        "Bitte erteilen Sie uns Ihren Auftrag unter Bezugnahme auf die obige Angebots-Nr."
+    )
+
+    context = {
+        "logo_uri": _logo_uri(),
+        "doc_label": "Angebot",
+        "doc_number": quotation.get("quotation_number") or "—",
+        "doc_number_label": "Angebots-Nr.",
+        "today": date.today().strftime("%d.%m.%Y"),
+        "doc_date": _format_date(quotation.get("quoted_at")),
+        "doc_date_label": "Angebotsdatum",
+        "due_date": _format_date(quotation.get("valid_until")),
+        "due_date_label": "Gültig bis",
+        "due_date_warn": False,
+        "service_date": "",
+        "service_date_label": "",
+        "reference": quotation.get("customer_reference"),
+        "reference_label": "Ihre Anfrage-Nr.",
+        "related_order_number": "",
+        "customer_number": customer.get("customer_number") or "",
+        "recipient_label_billing": "Rechnungsadresse",
+        "recipient_label_shipping": "Lieferadresse",
+        "shipping_party_name": quotation.get("shipping_party_name") or customer.get("legal_name"),
+        "price_label": "VK €",
+        "total_label": "Angebotssumme",
+        "currency_label": "EUR",
+        "d": quotation,
+        "party": customer,
+        "shipping_addr": shipping_addr,
+        "billing_addr": billing_addr,
+        "storno_banner": "",
+        "dropship_note": "",
+        "reverse_charge": rev_charge,
+        "items": built,
+        "master_label_1": "Ihre Anfrage-Nr.",
+        "master_value_1": quotation.get("customer_reference") or "",
+        "master_label_2": "Versand",
+        "master_value_2": _shipping_label(quotation),
+        "master_label_3": "Zahlungsziel",
+        "master_value_3": _payment_terms_label(quotation),
+        "master_label_4": "USt-Modus",
+        "master_value_4": _ust_mode_label(rev_charge, items),
+        "customs_lines": _customs_lines_from_breakdown(totals["tax_breakdown"]),
+        "footer_help": "Fragen zu diesem Angebot? Wir helfen gern weiter:",
+        "footer_hint": " ".join(hint_parts) or None,
+        "bank_lines": _build_bank_lines(company),
+        "open_balance_eur": "",
+        "company": company,
+        **{k: v for k, v in totals.items() if not k.startswith("_")},
+    }
+    return _render(context)
+
+
+# =====================================================================
 #  Auftragsbestätigung
 # =====================================================================
 
