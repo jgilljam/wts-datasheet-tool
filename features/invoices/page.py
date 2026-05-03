@@ -189,8 +189,8 @@ def _render_bulk_actions(selected: list[tuple[str, dict[str, Any]]]) -> None:
                 st.error("Fehler: " + " · ".join(errors))
             else:
                 st.toast(
-                    f"💶 {len(payable)} Rechnung(en) als bezahlt verbucht ({cents_to_eur(total_open)})",
-                    icon="✓",
+                    f"{len(payable)} Rechnung(en) als bezahlt verbucht ({cents_to_eur(total_open)})",
+                    icon="💶",
                 )
             st.rerun()
 

@@ -149,7 +149,7 @@ def _render_bulk_actions(selected: list[tuple[str, dict[str, Any]]]) -> None:
             if errors:
                 st.error("Fehler bei: " + " · ".join(errors))
             else:
-                st.toast(f"✓ {len(drafts)} Auftrag/Aufträge bestätigt", icon="✓")
+                st.toast(f"{len(drafts)} Auftrag/Aufträge bestätigt", icon="✅")
             st.rerun()
 
         # Bulk-In-Produktion-Setzen: alle confirmed
@@ -169,7 +169,7 @@ def _render_bulk_actions(selected: list[tuple[str, dict[str, Any]]]) -> None:
             if errors:
                 st.error("Fehler bei: " + " · ".join(errors))
             else:
-                st.toast(f"🔧 {len(confirmed)} → In Produktion", icon="✓")
+                st.toast(f"{len(confirmed)} → In Produktion", icon="🔧")
             st.rerun()
 
         # Bulk-Abschließen: alle shipped
@@ -189,7 +189,7 @@ def _render_bulk_actions(selected: list[tuple[str, dict[str, Any]]]) -> None:
             if errors:
                 st.error("Fehler bei: " + " · ".join(errors))
             else:
-                st.toast(f"✓ {len(shipped)} abgeschlossen", icon="✓")
+                st.toast(f"{len(shipped)} abgeschlossen", icon="✅")
             st.rerun()
 
 

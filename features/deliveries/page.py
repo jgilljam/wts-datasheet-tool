@@ -493,7 +493,7 @@ def _render_status_control(d: dict[str, Any]) -> None:
                 "partial": "Parent → Teilweise erfüllt",
                 "received": "Bestellung → Empfangen",
             }.get(parent_updated, parent_updated)
-            st.toast(f"📑 Auto-Update: {parent_label}", icon="✓")
+            st.toast(f"Auto-Update: {parent_label}", icon="📑")
         st.success(msg)
         st.rerun()
 
