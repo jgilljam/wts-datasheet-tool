@@ -356,8 +356,10 @@ def _render_dunning_history() -> None:
 
 
 def render() -> None:
-    render_header()
-    st.title("💼 OP-Liste & Mahnwesen")
+    render_header(
+        "OP-Liste & Mahnwesen",
+        "Offene Posten · Verzugszinsen · Mahnstufen 1–3",
+    )
 
     tab_op, tab_history = st.tabs(["📋 Offene Posten", "📚 Mahnungs-Historie"])
     with tab_op:

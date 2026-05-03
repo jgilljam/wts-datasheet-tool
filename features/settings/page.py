@@ -56,8 +56,10 @@ def _completeness_check(s: dict) -> tuple[int, int, list[str]]:
 
 
 def render() -> None:
-    render_header()
-    st.title("⚙️ Firmen-Einstellungen")
+    render_header(
+        "Einstellungen",
+        "Firmen-Stammdaten · Bankverbindung · Zoll · Mahnwesen",
+    )
 
     settings = _load_settings()
     sid = settings["id"]

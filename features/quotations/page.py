@@ -598,8 +598,10 @@ def _render_items_editor(qid: str, items: list[dict[str, Any]], is_locked: bool)
 # =====================================================================
 
 def render() -> None:
-    render_header()
-    st.title("📑 Angebote")
+    render_header(
+        "Angebote",
+        "Quotations — Anlegen · Versenden · In Auftrag konvertieren",
+    )
 
     qid = st.query_params.get("id")
     if qid:

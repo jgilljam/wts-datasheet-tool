@@ -417,8 +417,10 @@ def _render_detail(inv_id: str) -> None:
 # =====================================================================
 
 def render() -> None:
-    render_header()
-    st.title("📥 Eingangsrechnungen")
+    render_header(
+        "Eingangsrechnungen",
+        "Lieferanten-Rechnungen — Upload · OCR · BE-Zuordnung",
+    )
 
     inv_id = st.query_params.get("id")
     if inv_id:
