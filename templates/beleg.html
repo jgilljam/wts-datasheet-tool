@@ -8,128 +8,131 @@
 <body>
 
 {# ============================================================
-   HEADER — Logo+Adresse links | Voice/Fax mittig | Titel+Meta rechts
+   HEADER — Logo links | Großer Titel + Meta rechts
    ============================================================ #}
 <header class="page-header">
-  <div class="header-left">
+  <div class="brand">
     <img class="logo" src="{{ logo_uri }}" alt="WTS">
-    <div class="company-block">
-      <div class="company-name">{{ company.legal_name or 'Weber Trading &amp; Service' }}</div>
-      {% if company.street %}<div>{{ company.street }}</div>{% endif %}
-      {% if company.zip or company.city %}<div>{{ company.zip or '' }} {{ company.city or '' }}{% if company.country_code and company.country_code != 'DE' %}, {{ company.country_code }}{% endif %}</div>{% endif %}
-      <div>{% if company.country_code == 'DE' or not company.country_code %}Deutschland{% endif %}</div>
-    </div>
+    <div class="brand-tagline">Industrial Trading · Cooling Components</div>
   </div>
-  <div class="header-mid">
-    {% if company.phone %}
-    <div class="contact-row"><span class="lbl">Phone:</span> <span class="val">{{ company.phone }}</span></div>
-    {% endif %}
-    {% if company.fax %}
-    <div class="contact-row"><span class="lbl">Fax:</span> <span class="val">{{ company.fax }}</span></div>
-    {% endif %}
-    {% if company.email %}
-    <div class="contact-row"><span class="lbl">Email:</span> <span class="val">{{ company.email }}</span></div>
-    {% endif %}
-  </div>
-  <div class="header-right">
-    <div class="page-hint">Page: 1</div>
+  <div class="doc-head">
     <div class="doc-title">{{ doc_label }}</div>
-    <table class="meta-table">
-      <tr><td class="lbl">{{ doc_number_label }}:</td><td class="val">{{ doc_number }}</td></tr>
-      <tr><td class="lbl">{{ doc_date_label }}:</td><td class="val">{{ doc_date or today }}</td></tr>
-      {% if due_date %}
-      <tr>
-        <td class="lbl{% if due_date_warn %} warn{% endif %}">{{ due_date_label }}:</td>
-        <td class="val{% if due_date_warn %} warn{% endif %}">{{ due_date }}</td>
-      </tr>
-      {% endif %}
-      {% if service_date %}
-      <tr><td class="lbl">{{ service_date_label }}:</td><td class="val">{{ service_date }}</td></tr>
-      {% endif %}
-      {% if reference %}
-      <tr><td class="lbl">{{ reference_label }}:</td><td class="val">{{ reference }}</td></tr>
-      {% endif %}
-      {% if related_order_number %}
-      <tr><td class="lbl">Auftrag:</td><td class="val">{{ related_order_number }}</td></tr>
-      {% endif %}
-    </table>
-    {% if customer_number %}
-    <div class="customer-line"><span class="lbl">Kunden-Nr.:</span> <span class="val">{{ customer_number }}</span></div>
-    {% endif %}
+    <div class="doc-number">{{ doc_number }}</div>
   </div>
 </header>
 
+{# ============================================================
+   META-RIBBON — flach, Eyebrow + Wert
+   ============================================================ #}
+<section class="meta-ribbon">
+  <div class="meta-cell">
+    <div class="eyebrow">{{ doc_date_label }}</div>
+    <div class="meta-val">{{ doc_date or today }}</div>
+  </div>
+  {% if due_date %}
+  <div class="meta-cell{% if due_date_warn %} warn{% endif %}">
+    <div class="eyebrow">{{ due_date_label }}</div>
+    <div class="meta-val">{{ due_date }}</div>
+  </div>
+  {% endif %}
+  {% if service_date %}
+  <div class="meta-cell">
+    <div class="eyebrow">{{ service_date_label }}</div>
+    <div class="meta-val">{{ service_date }}</div>
+  </div>
+  {% endif %}
+  {% if reference %}
+  <div class="meta-cell">
+    <div class="eyebrow">{{ reference_label }}</div>
+    <div class="meta-val">{{ reference }}</div>
+  </div>
+  {% endif %}
+  {% if customer_number %}
+  <div class="meta-cell">
+    <div class="eyebrow">Kunden-Nr.</div>
+    <div class="meta-val">{{ customer_number }}</div>
+  </div>
+  {% endif %}
+  {% if related_order_number %}
+  <div class="meta-cell">
+    <div class="eyebrow">Auftrag</div>
+    <div class="meta-val">{{ related_order_number }}</div>
+  </div>
+  {% endif %}
+</section>
+
 {# Banner #}
 {% if storno_banner %}
-<section class="alert-banner danger">{{ storno_banner }}</section>
+<section class="alert alert-danger">{{ storno_banner }}</section>
 {% endif %}
 {% if dropship_note %}
-<section class="alert-banner info"><strong>Streckengeschäft</strong> — {{ dropship_note }}</section>
+<section class="alert alert-info"><strong>Streckengeschäft</strong> — {{ dropship_note }}</section>
 {% endif %}
 
 {# ============================================================
-   PARTEIEN — Bill-To / Ship-To
+   PARTEIEN — keine Boxen, nur Eyebrow + Adresse, vertikaler Trenner
    ============================================================ #}
 <section class="parties">
-  <div class="party-box">
-    <div class="party-header">{{ recipient_label_billing }}</div>
-    <div class="party-body">
-      <div class="party-name">{{ party.legal_name or '—' }}</div>
-      {% if billing_addr %}
+  <div class="party">
+    <div class="eyebrow">{{ recipient_label_billing }}</div>
+    <div class="party-name">{{ party.legal_name or '—' }}</div>
+    {% if billing_addr %}
+    <div class="party-addr">
       <div>{{ billing_addr.street or '' }}{% if billing_addr.street_2 %}, {{ billing_addr.street_2 }}{% endif %}</div>
-      <div>{{ billing_addr.zip or '' }} {{ billing_addr.city or '' }}{% if billing_addr.country_code and billing_addr.country_code != 'DE' %}, {{ billing_addr.country_code }}{% endif %}</div>
-      {% endif %}
-      {% if party.vat_id %}<div class="vat-line">USt-IdNr.: {{ party.vat_id }}</div>{% endif %}
+      <div>{{ billing_addr.zip or '' }} {{ billing_addr.city or '' }}{% if billing_addr.country_code and billing_addr.country_code != 'DE' %}<br>{{ billing_addr.country_code }}{% endif %}</div>
     </div>
+    {% endif %}
+    {% if party.vat_id %}<div class="party-meta">USt-IdNr. · {{ party.vat_id }}</div>{% endif %}
   </div>
-  <div class="party-box">
-    <div class="party-header">{{ recipient_label_shipping }}</div>
-    <div class="party-body">
-      <div class="party-name">{{ shipping_party_name or party.legal_name or '—' }}</div>
-      {% if shipping_addr %}
+  <div class="party party-right">
+    <div class="eyebrow">{{ recipient_label_shipping }}</div>
+    <div class="party-name">{{ shipping_party_name or party.legal_name or '—' }}</div>
+    {% if shipping_addr %}
+    <div class="party-addr">
       <div>{{ shipping_addr.street or '' }}{% if shipping_addr.street_2 %}, {{ shipping_addr.street_2 }}{% endif %}</div>
-      <div>{{ shipping_addr.zip or '' }} {{ shipping_addr.city or '' }}{% if shipping_addr.country_code and shipping_addr.country_code != 'DE' %}, {{ shipping_addr.country_code }}{% endif %}</div>
-      {% endif %}
+      <div>{{ shipping_addr.zip or '' }} {{ shipping_addr.city or '' }}{% if shipping_addr.country_code and shipping_addr.country_code != 'DE' %}<br>{{ shipping_addr.country_code }}{% endif %}</div>
     </div>
+    {% endif %}
   </div>
 </section>
 
 {# ============================================================
-   MASTER-DATEN
+   KONDITIONEN-ZEILE — Inline statt Tabelle
    ============================================================ #}
-<table class="master-table">
-  <thead>
-    <tr>
-      <th>{{ master_label_1 }}</th>
-      <th>{{ master_label_2 }}</th>
-      <th>{{ master_label_3 }}</th>
-      <th>{{ master_label_4 }}</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>{{ master_value_1 or '' }}</td>
-      <td>{{ master_value_2 or '' }}</td>
-      <td>{{ master_value_3 or '' }}</td>
-      <td>{{ master_value_4 or '' }}</td>
-    </tr>
-  </tbody>
-</table>
+<section class="terms-row">
+  <div class="term">
+    <div class="eyebrow">{{ master_label_1 }}</div>
+    <div class="term-val">{{ master_value_1 or '—' }}</div>
+  </div>
+  <div class="term">
+    <div class="eyebrow">{{ master_label_2 }}</div>
+    <div class="term-val">{{ master_value_2 or '—' }}</div>
+  </div>
+  <div class="term">
+    <div class="eyebrow">{{ master_label_3 }}</div>
+    <div class="term-val">{{ master_value_3 or '—' }}</div>
+  </div>
+  <div class="term">
+    <div class="eyebrow">{{ master_label_4 }}</div>
+    <div class="term-val">{{ master_value_4 or '—' }}</div>
+  </div>
+</section>
 
 {# ============================================================
-   ITEMS — Item Code (SKU+Title+Sub combined) | Menge | Einh | Preis | Rab | USt | Summe
+   ITEMS — minimalistisch, nur Top/Bottom Border
    ============================================================ #}
-<table class="items-table">
+<table class="items{% if hide_totals %} items-quote{% endif %}">
   <thead>
     <tr>
       <th class="col-pos">Pos</th>
-      <th class="col-item">Item Code</th>
+      <th class="col-item">Artikel</th>
       <th class="col-qty">Menge</th>
-      <th class="col-unit">Einh.</th>
       <th class="col-price">{{ price_label }}</th>
-      <th class="col-disc">Rab.</th>
+      {% if not hide_totals %}
+      <th class="col-disc">Rabatt</th>
       <th class="col-tax">USt</th>
       <th class="col-total">Betrag {{ currency_label }}</th>
+      {% endif %}
     </tr>
   </thead>
   <tbody>
@@ -138,27 +141,61 @@
       <tr>
         <td class="col-pos">{{ it.pos_nr }}</td>
         <td class="col-item">
-          {% if it.sku %}<div class="item-sku">{{ it.sku }}</div>{% endif %}
+          {% if it.sku %}<span class="item-sku">{{ it.sku }}</span>{% endif %}
           {% if it.title %}<div class="item-title">{{ it.title }}</div>{% endif %}
           {% if it.description_override and it.title %}<div class="item-sub">{{ it.description_override }}</div>{% elif it.description_override %}<div class="item-title">{{ it.description_override }}</div>{% endif %}
+          {% if it.delivery_text %}<div class="item-delivery"><span class="dl-key">Liefertermin</span> {{ it.delivery_text }}</div>{% endif %}
           {% if it.is_dropship %}<div class="item-mark">Direktlieferung</div>{% endif %}
         </td>
-        <td class="col-qty num">{{ it.qty_display }}</td>
-        <td class="col-unit">{{ it.unit or 'Stk' }}</td>
+        <td class="col-qty num">{{ it.qty_display }} <span class="unit">{{ it.unit or 'Stk' }}</span></td>
         <td class="col-price num">{{ it.unit_price_eur }}</td>
+        {% if not hide_totals %}
         <td class="col-disc num">{% if it.discount_pct %}{{ it.discount_pct }} %{% endif %}</td>
         <td class="col-tax num">{{ it.tax_rate }} %</td>
         <td class="col-total num">{{ it.line_total_eur }}</td>
+        {% endif %}
       </tr>
       {% endfor %}
     {% else %}
-      <tr><td colspan="8" class="empty-row">Keine Positionen erfasst.</td></tr>
+      <tr><td colspan="{% if hide_totals %}4{% else %}7{% endif %}" class="empty-row">Keine Positionen erfasst.</td></tr>
     {% endif %}
   </tbody>
 </table>
 
-{# Customs / Tax-Hinweise plain unter der Tabelle #}
-{% if customs_lines %}
+{# ============================================================
+   TOTALS — rechtsbündig, ohne Box
+   ============================================================ #}
+{% if not hide_totals %}
+<section class="totals-section">
+  <div class="totals-spacer"></div>
+  <table class="totals">
+    {% if discount_total_eur %}
+    <tr><td class="lbl">Rabatt gesamt</td><td class="val num">−{{ discount_total_eur }}</td></tr>
+    {% endif %}
+    <tr><td class="lbl">Zwischensumme netto</td><td class="val num">{{ net_total_eur }}</td></tr>
+    {% if tax_breakdown and tax_breakdown|length > 1 %}
+      {% for b in tax_breakdown %}
+      <tr><td class="lbl">USt {{ b.rate_label }}</td><td class="val num">{{ b.tax_eur }}</td></tr>
+      {% endfor %}
+    {% else %}
+    <tr><td class="lbl">Umsatzsteuer {{ tax_rate_summary }}</td><td class="val num">{{ tax_total_eur }}</td></tr>
+    {% endif %}
+    <tr class="grand">
+      <td class="lbl">{{ total_label }} {{ currency_label }}</td>
+      <td class="val num">{{ gross_total_eur }}</td>
+    </tr>
+    {% if open_balance_eur is defined and open_balance_eur %}
+    <tr class="open-balance">
+      <td class="lbl">Offen</td>
+      <td class="val num">{{ open_balance_eur }}</td>
+    </tr>
+    {% endif %}
+  </table>
+</section>
+{% endif %}
+
+{# Customs / Tax-Hinweise — bei hide_totals weglassen (passt nicht zu Quote-Variante) #}
+{% if customs_lines and not hide_totals %}
 <div class="customs-block">
   {% for line in customs_lines %}
   <div>{{ line }}</div>
@@ -166,62 +203,36 @@
 </div>
 {% endif %}
 
-{# ============================================================
-   FOOTER — drei Spalten: GF/Bank links | Help-Box mittig | Totals-Box rechts
-   ============================================================ #}
-<section class="footer-grid">
-  <div class="footer-col gf-col">
-    {% if company.managing_director %}<div><strong>Geschäftsführer:</strong> {{ company.managing_director }}</div>{% endif %}
-    {% if company.hr_register %}<div>{{ company.hr_register }}</div>{% endif %}
-    {% if company.tax_office %}<div>{{ company.tax_office }}{% if company.tax_number %}, Steuer-Nr. {{ company.tax_number }}{% endif %}</div>{% elif company.tax_number %}<div><strong>Steuer-Nr.:</strong> {{ company.tax_number }}</div>{% endif %}
-    {% if company.vat_id %}<div><strong>USt-IdNr.:</strong> {{ company.vat_id }}{% if company.eori %}, EORI {{ company.eori }}{% endif %}</div>{% endif %}
-    {% if bank_lines %}
-    <div class="bank-block">
-      {% for line in bank_lines %}<div>{{ line }}</div>{% endfor %}
-    </div>
-    {% endif %}
-  </div>
-
-  <div class="footer-col help-col">
-    <div class="help-box">
-      {% if footer_help %}<div class="help-text">{{ footer_help }}</div>{% endif %}
-      {% if company.phone %}<div><strong>Phone:</strong> {{ company.phone }}</div>{% endif %}
-      {% if company.email %}<div><strong>Email:</strong> {{ company.email }}</div>{% endif %}
-    </div>
-  </div>
-
-  <div class="footer-col totals-col">
-    <table class="totals-table">
-      {% if discount_total_eur %}
-      <tr><td class="lbl">Rabatt gesamt</td><td class="val num">−{{ discount_total_eur }}</td></tr>
-      {% endif %}
-      <tr><td class="lbl">Netto {{ currency_label }}:</td><td class="val num">{{ net_total_eur }}</td></tr>
-      <tr><td class="lbl">Versand:</td><td class="val num">0,00 €</td></tr>
-      {% if tax_breakdown and tax_breakdown|length > 1 %}
-        {% for b in tax_breakdown %}
-        <tr><td class="lbl">USt {{ b.rate_label }}:</td><td class="val num">{{ b.tax_eur }}</td></tr>
-        {% endfor %}
-      {% else %}
-      <tr><td class="lbl">USt {{ tax_rate_summary }}:</td><td class="val num">{{ tax_total_eur }}</td></tr>
-      {% endif %}
-      <tr class="grand-total">
-        <td class="lbl">{{ total_label }} {{ currency_label }}:</td>
-        <td class="val num">{{ gross_total_eur }}</td>
-      </tr>
-      {% if open_balance_eur is defined and open_balance_eur %}
-      <tr class="open-balance">
-        <td class="lbl">Offen:</td>
-        <td class="val num">{{ open_balance_eur }}</td>
-      </tr>
-      {% endif %}
-    </table>
-  </div>
-</section>
-
 {# Footer-Hint #}
 {% if footer_hint %}
 <section class="footer-hint">{{ footer_hint }}</section>
 {% endif %}
+
+{# ============================================================
+   COMPANY-FOOTER — minimal, mono, 3 Spalten
+   ============================================================ #}
+<footer class="company-footer">
+  <div class="ft-col">
+    <div class="ft-key">{{ company.legal_name or 'Weber Trading &amp; Service' }}</div>
+    {% if company.street %}<div>{{ company.street }}</div>{% endif %}
+    {% if company.zip or company.city %}<div>{{ company.zip or '' }} {{ company.city or '' }}{% if company.country_code and company.country_code != 'DE' %}, {{ company.country_code }}{% endif %}</div>{% endif %}
+    {% if company.phone %}<div>T {{ company.phone }}</div>{% endif %}
+    {% if company.email %}<div>{{ company.email }}</div>{% endif %}
+  </div>
+  <div class="ft-col">
+    {% if company.managing_director %}<div><span class="ft-key">Geschäftsführer</span><br>{{ company.managing_director }}</div>{% endif %}
+    {% if company.hr_register %}<div class="ft-spacer">{{ company.hr_register }}</div>{% endif %}
+    {% if company.tax_office or company.tax_number %}<div>{{ company.tax_office }}{% if company.tax_number %}, Steuer-Nr. {{ company.tax_number }}{% endif %}</div>{% endif %}
+    {% if company.vat_id %}<div>USt-IdNr. {{ company.vat_id }}</div>{% endif %}
+    {% if company.eori %}<div>EORI {{ company.eori }}</div>{% endif %}
+  </div>
+  <div class="ft-col">
+    {% if bank_lines %}
+      <div class="ft-key">Bankverbindung</div>
+      {% for line in bank_lines %}<div>{{ line }}</div>{% endfor %}
+    {% endif %}
+  </div>
+</footer>
 
 </body>
 </html>

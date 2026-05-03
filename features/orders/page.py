@@ -553,6 +553,11 @@ def _render_items_editor(o: dict[str, Any]) -> None:
         else:
             label = FREE_ITEM_LABEL
         unit_price_eur = float((it.get("unit_price_cents") or 0)) / 100.0
+        # Liefertermin: Datum oder Freitext
+        if it.get("expected_delivery_date"):
+            delivery_str = format_date(it["expected_delivery_date"])
+        else:
+            delivery_str = it.get("delivery_lead_time_text") or ""
         rows.append({
             "Pos": it.get("pos_nr") or 0,
             "Artikel": label,
@@ -562,9 +567,10 @@ def _render_items_editor(o: dict[str, Any]) -> None:
             "Preis €": unit_price_eur,
             "Rabatt %": float(it.get("discount_pct") or 0),
             "USt %": float(it.get("tax_rate") if it.get("tax_rate") is not None else default_tax),
+            "Liefertermin": delivery_str,
         })
 
-    columns = ["Pos", "Artikel", "Beschreibung", "Menge", "Einheit", "Preis €", "Rabatt %", "USt %"]
+    columns = ["Pos", "Artikel", "Beschreibung", "Menge", "Einheit", "Preis €", "Rabatt %", "USt %", "Liefertermin"]
     df = pd.DataFrame(rows, columns=columns) if rows else pd.DataFrame(columns=columns)
 
     if is_locked:
@@ -590,6 +596,10 @@ def _render_items_editor(o: dict[str, Any]) -> None:
             "Preis €": st.column_config.NumberColumn(format="%.2f", width="small"),
             "Rabatt %": st.column_config.NumberColumn(format="%.1f", width="small"),
             "USt %": st.column_config.NumberColumn(format="%.0f", width="small"),
+            "Liefertermin": st.column_config.TextColumn(
+                width="small",
+                help='Datum (TT.MM.JJJJ) ODER Freitext wie "6-8 Wochen" / "ab Lager"',
+            ),
         },
         key=f"order_items_{order_id}",
     )
@@ -654,6 +664,16 @@ def _render_items_editor(o: dict[str, Any]) -> None:
                 item["article_id"] = article_id
             if description:
                 item["description_override"] = description
+
+            # Liefertermin: erst Datum-Parse versuchen, sonst Freitext
+            delivery_raw = (row.get("Liefertermin") or "").strip()
+            if delivery_raw:
+                parsed_date = parse_date(delivery_raw)
+                if parsed_date:
+                    item["expected_delivery_date"] = parsed_date.isoformat()
+                else:
+                    item["delivery_lead_time_text"] = delivery_raw
+
             new_items.append(item)
 
         try:

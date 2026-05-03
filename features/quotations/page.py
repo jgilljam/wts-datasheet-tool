@@ -327,21 +327,8 @@ def _render_detail(qid: str) -> None:
             service.reject_quotation(qid)
             st.rerun()
 
-    # PDF-Download
-    if cols[2].button("📄 PDF erzeugen", use_container_width=True, key=f"pdf_{qid}"):
-        from lib.beleg_generator import render_angebot_pdf
-        try:
-            pdf_bytes = render_angebot_pdf(q, items)
-            st.download_button(
-                label="⬇ Download Angebot.pdf",
-                data=pdf_bytes,
-                file_name=f"{q['quotation_number']}.pdf",
-                mime="application/pdf",
-                key=f"dl_{qid}",
-                type="primary",
-            )
-        except Exception as exc:
-            st.error(f"PDF-Fehler: {exc}")
+    # PDF-Download — Toggle wird unterhalb gerendert, Button bleibt in cols[2]
+    pdf_clicked = cols[2].button("📄 PDF erzeugen", use_container_width=True, key=f"pdf_{qid}")
 
     if cols[3].button("🗑 Löschen", use_container_width=True, key=f"del_{qid}"):
         if q.get("status") not in {"draft", "cancelled"}:
@@ -351,6 +338,43 @@ def _render_detail(qid: str) -> None:
             st.toast("Angebot gelöscht.", icon="🗑")
             st.query_params.clear()
             st.rerun()
+
+    # PDF-Optionen + Erzeugung
+    pdf_c1, pdf_c2 = st.columns([1, 2])
+    default_hide = bool(q.get("hide_totals_in_pdf"))
+    hide_totals = pdf_c1.checkbox(
+        "Quote-Variante (ohne Gesamtsumme)",
+        value=default_hide,
+        key=f"hide_totals_{qid}",
+        help="Zeigt nur Pos · Artikel · Menge · Preis. Keine Rabatt-/USt-Spalten, keine Summen.",
+    )
+    if hide_totals != default_hide:
+        try:
+            supabase().table("quotations").update(
+                {"hide_totals_in_pdf": hide_totals}
+            ).eq("id", qid).execute()
+        except Exception as exc:
+            pdf_c1.warning(f"Konnte Einstellung nicht persistieren: {exc}")
+
+    if pdf_clicked:
+        from lib.beleg_generator import render_angebot_pdf
+        try:
+            pdf_bytes = render_angebot_pdf(q, items, hide_totals=hide_totals)
+            st.session_state[f"pdf_bytes_{qid}"] = pdf_bytes
+        except Exception as exc:
+            st.error(f"PDF-Fehler: {exc}")
+
+    if st.session_state.get(f"pdf_bytes_{qid}"):
+        suffix = "-Quote" if hide_totals else ""
+        pdf_c2.download_button(
+            label="⬇ Download Angebot.pdf",
+            data=st.session_state[f"pdf_bytes_{qid}"],
+            file_name=f"{q['quotation_number']}{suffix}.pdf",
+            mime="application/pdf",
+            key=f"dl_{qid}",
+            type="primary",
+            use_container_width=True,
+        )
 
     st.divider()
 
@@ -429,6 +453,10 @@ def _render_items_editor(qid: str, items: list[dict[str, Any]], is_locked: bool)
     rows: list[dict[str, Any]] = []
     for it in items:
         a = it.get("articles") or {}
+        if it.get("expected_delivery_date"):
+            delivery_str = format_date(it["expected_delivery_date"])
+        else:
+            delivery_str = it.get("delivery_lead_time_text") or ""
         rows.append({
             "Pos": it.get("pos_nr") or "",
             "SKU": a.get("sku") or "",
@@ -438,9 +466,10 @@ def _render_items_editor(qid: str, items: list[dict[str, Any]], is_locked: bool)
             "Preis €": (int(it.get("unit_price_cents") or 0) / 100.0),
             "Rabatt %": float(it.get("discount_pct") or 0),
             "USt %": float(it.get("tax_rate") or TAX_RATE_DEFAULT),
+            "Liefertermin": delivery_str,
         })
     df = pd.DataFrame(rows) if rows else pd.DataFrame(columns=[
-        "Pos", "SKU", "Bezeichnung", "Menge", "Einheit", "Preis €", "Rabatt %", "USt %",
+        "Pos", "SKU", "Bezeichnung", "Menge", "Einheit", "Preis €", "Rabatt %", "USt %", "Liefertermin",
     ])
 
     edited = st.data_editor(
@@ -459,6 +488,10 @@ def _render_items_editor(qid: str, items: list[dict[str, Any]], is_locked: bool)
             "Preis €": st.column_config.NumberColumn(width="small", step=0.01, format="%.2f"),
             "Rabatt %": st.column_config.NumberColumn(width="small", step=0.1, format="%.1f"),
             "USt %": st.column_config.NumberColumn(width="small", step=1.0, format="%.0f"),
+            "Liefertermin": st.column_config.TextColumn(
+                width="small",
+                help='Datum (TT.MM.JJJJ) oder Freitext wie "6-8 Wochen"',
+            ),
         },
     )
 
@@ -479,6 +512,16 @@ def _render_items_editor(qid: str, items: list[dict[str, Any]], is_locked: bool)
                 net_line = gross_line - disc_cents
                 tax_line = net_line * tax_rate / 100.0
                 article_id = sku_to_id.get(str(r.get("SKU") or "").strip())
+                # Liefertermin: Datum oder Freitext
+                delivery_raw = (str(r.get("Liefertermin") or "")).strip()
+                expected_date = None
+                lead_text = None
+                if delivery_raw:
+                    pd_date = parse_date(delivery_raw)
+                    if pd_date:
+                        expected_date = pd_date.isoformat()
+                    else:
+                        lead_text = delivery_raw
                 new_items.append({
                     "pos_nr": int(r.get("Pos") or i + 1),
                     "article_id": article_id,
@@ -490,6 +533,8 @@ def _render_items_editor(qid: str, items: list[dict[str, Any]], is_locked: bool)
                     "tax_rate": tax_rate,
                     "tax_amount_cents": int(round(tax_line)),
                     "discount_pct": disc_pct,
+                    "expected_delivery_date": expected_date,
+                    "delivery_lead_time_text": lead_text,
                 })
             try:
                 service.replace_items(qid, new_items)

@@ -131,6 +131,12 @@ def _build_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for it in items:
         a = it.get("articles") or {}
         qty = it.get("qty")
+        # Liefertermin pro Position: Datum oder Freitext (z.B. "6-8 Wochen")
+        delivery_text = ""
+        if it.get("expected_delivery_date"):
+            delivery_text = _format_date(it["expected_delivery_date"])
+        elif it.get("delivery_lead_time_text"):
+            delivery_text = str(it["delivery_lead_time_text"]).strip()
         out.append({
             "pos_nr": it.get("pos_nr") or "",
             "sku": a.get("sku") or "",
@@ -146,6 +152,7 @@ def _build_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "tax_rate": int(float(it.get("tax_rate") or 0)),
             "line_total_eur": _eur(it.get("line_total_cents") or 0),
             "is_dropship": bool(it.get("is_dropship")),
+            "delivery_text": delivery_text,
         })
     return out
 
@@ -233,7 +240,12 @@ def _customs_lines_from_breakdown(tax_breakdown: list[dict[str, str]]) -> list[s
 #  Angebot
 # =====================================================================
 
-def render_angebot_pdf(quotation: dict[str, Any], items: list[dict[str, Any]]) -> bytes:
+def render_angebot_pdf(
+    quotation: dict[str, Any],
+    items: list[dict[str, Any]],
+    *,
+    hide_totals: bool | None = None,
+) -> bytes:
     """Rendert ein Angebot als PDF.
 
     Args:
@@ -313,6 +325,11 @@ def render_angebot_pdf(quotation: dict[str, Any], items: list[dict[str, Any]]) -
         "bank_lines": _build_bank_lines(company),
         "open_balance_eur": "",
         "company": company,
+        "hide_totals": (
+            hide_totals
+            if hide_totals is not None
+            else bool(quotation.get("hide_totals_in_pdf"))
+        ),
         **{k: v for k, v in totals.items() if not k.startswith("_")},
     }
     return _render(context)
