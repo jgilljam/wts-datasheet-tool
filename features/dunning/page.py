@@ -178,6 +178,33 @@ def _render_op_list() -> None:
         _bulk_escalate(selected)
 
 
+def _persist_dunning_pdf(dunning_id: str, inv_id: str) -> None:
+    """Rendert die neue Mahnung sofort und schreibt sie byte-stable ins Archiv.
+
+    Mahnungen sind append-only und sofort GoBD-relevant — daher persist=True
+    direkt nach Erstellung. Fehler werden geschluckt (User sieht st.warning).
+    """
+    try:
+        from lib.beleg_generator import render_mahnung_pdf
+        from lib.pdf_storage import persist_after_lock
+        dunning = repo.get_dunning(dunning_id)
+        inv = inv_repo.get_invoice(inv_id)
+        items = inv_repo.list_invoice_items(inv_id)
+        if not (dunning and inv and items):
+            return
+        pdf_bytes = render_mahnung_pdf(inv, items, dunning)
+        beleg_number = f"M{dunning['level']}-{inv['invoice_number']}"
+        persist_after_lock(
+            table="invoice_dunnings",
+            doc_id=dunning_id,
+            beleg_type="dunning",
+            beleg_number=beleg_number,
+            pdf_bytes=pdf_bytes,
+        )
+    except Exception as exc:
+        st.warning(f"Mahnung erstellt, aber PDF-Archivierung fehlgeschlagen: {exc}")
+
+
 def _bulk_dunning(selected: list[tuple[str, dict]], target_level: int) -> None:
     success = 0
     skipped: list[str] = []
@@ -188,7 +215,8 @@ def _bulk_dunning(selected: list[tuple[str, dict]], target_level: int) -> None:
             if cur >= target_level:
                 skipped.append(f"{inv.get('invoice_number')} (bereits Stufe {cur})")
                 continue
-            service.create_dunning(inv_id, target_level)
+            new_id = service.create_dunning(inv_id, target_level)
+            _persist_dunning_pdf(new_id, inv_id)
             success += 1
         except Exception as exc:
             errors.append(f"{inv.get('invoice_number')}: {exc}")
@@ -206,7 +234,8 @@ def _bulk_escalate(selected: list[tuple[str, dict]]) -> None:
     errors: list[str] = []
     for inv_id, inv in selected:
         try:
-            service.escalate_dunning(inv_id)
+            new_id = service.escalate_dunning(inv_id)
+            _persist_dunning_pdf(new_id, inv_id)
             success += 1
         except Exception as exc:
             errors.append(f"{inv.get('invoice_number')}: {exc}")
@@ -279,14 +308,38 @@ def _render_dunning_history() -> None:
 
     st.markdown(f"**Mahnung Stufe {dunning['level']}** vom {format_date(dunning.get('sent_at'))}")
 
-    if st.button("📄 Mahnung-PDF erzeugen", type="primary", key=f"gen_pdf_{ids[idx]}"):
+    has_persisted = bool(dunning.get("pdf_storage_path"))
+    if has_persisted:
+        st.caption("📑 Festgeschriebenes PDF aus Archiv (byte-stable, GoBD).")
+    primary_label = (
+        "⬇ Mahnung-PDF laden (Archiv)"
+        if has_persisted
+        else "📄 Mahnung-PDF erzeugen"
+    )
+
+    if st.button(primary_label, type="primary", key=f"gen_pdf_{ids[idx]}"):
         try:
             inv = inv_repo.get_invoice(inv_ids[idx])
             items = inv_repo.list_invoice_items(inv_ids[idx])
-            from lib.beleg_generator import render_mahnung_pdf
-            pdf_bytes = render_mahnung_pdf(inv, items, dunning)
-            st.session_state[f"mahnung_pdf_{ids[idx]}"] = pdf_bytes
-            st.success(f"PDF erzeugt ({len(pdf_bytes) // 1024} KB).")
+            if not items:
+                st.error("Keine Positionen auf zugehöriger Rechnung.")
+            else:
+                from lib.beleg_generator import render_mahnung_pdf
+                from lib.pdf_storage import render_or_fetch
+                beleg_number = f"M{dunning['level']}-{inv['invoice_number']}"
+                pdf_bytes, _ = render_or_fetch(
+                    table="invoice_dunnings",
+                    doc=dunning,
+                    beleg_type="dunning",
+                    beleg_number=beleg_number,
+                    render_fn=lambda: render_mahnung_pdf(inv, items, dunning),
+                    persist=True,
+                )
+                st.session_state[f"mahnung_pdf_{ids[idx]}"] = pdf_bytes
+                if has_persisted:
+                    st.success(f"PDF geladen ({len(pdf_bytes) // 1024} KB).")
+                else:
+                    st.success(f"PDF erzeugt ({len(pdf_bytes) // 1024} KB).")
         except Exception as exc:
             st.error(f"PDF-Fehler: {exc}")
 

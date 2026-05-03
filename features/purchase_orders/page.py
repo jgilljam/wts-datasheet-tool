@@ -394,6 +394,24 @@ def _render_action_buttons(p: dict[str, Any]) -> None:
         except Exception as exc:
             st.error(f"Status-Update fehlgeschlagen: {exc}")
             return
+        # Auto-Persist beim Senden — Bestellung byte-stable archivieren
+        if next_status == "sent":
+            try:
+                from lib.beleg_generator import render_bestellung_pdf
+                from lib.pdf_storage import persist_after_lock
+                fresh = repo.get_po(po_id)
+                fresh_items = repo.list_po_items(po_id)
+                if fresh and fresh_items:
+                    pdf_bytes = render_bestellung_pdf(fresh, fresh_items)
+                    persist_after_lock(
+                        table="purchase_orders",
+                        doc_id=po_id,
+                        beleg_type="purchase_order",
+                        beleg_number=fresh["po_number"],
+                        pdf_bytes=pdf_bytes,
+                    )
+            except Exception as exc:
+                st.warning(f"Status gesetzt, aber PDF-Archivierung fehlgeschlagen: {exc}")
         st.success(f"Status: {PO_STATUS_LABELS.get(next_status, next_status)}")
         st.rerun()
 
@@ -709,13 +727,24 @@ def _render_detail_tab() -> None:
 def _render_pdf_section(po: dict[str, Any]) -> None:
     items = repo.list_po_items(po["id"])
     has_items = bool(items)
+    is_locked = bool(po.get("locked_at")) or po.get("status") in (
+        "sent", "confirmed", "in_production", "shipped"
+    )
+    has_persisted = bool(po.get("pdf_storage_path"))
 
     c1, c2 = st.columns([3, 2])
     if not has_items:
         c1.caption("ℹ️ Keine Positionen erfasst — die Bestellung wäre leer.")
+    elif has_persisted:
+        c1.caption("📑 Festgeschriebenes PDF aus Archiv (byte-stable, GoBD).")
 
+    primary_label = (
+        "⬇ Bestellung-PDF laden (Archiv)"
+        if has_persisted
+        else "📄 Bestellung-PDF generieren"
+    )
     if c1.button(
-        "📄 Bestellung-PDF generieren",
+        primary_label,
         key=f"gen_po_pdf_{po['id']}",
         type="primary",
         use_container_width=True,
@@ -723,12 +752,23 @@ def _render_pdf_section(po: dict[str, Any]) -> None:
     ):
         try:
             from lib.beleg_generator import render_bestellung_pdf
-            pdf_bytes = render_bestellung_pdf(po, items)
+            from lib.pdf_storage import render_or_fetch
+            pdf_bytes, _ = render_or_fetch(
+                table="purchase_orders",
+                doc=po,
+                beleg_type="purchase_order",
+                beleg_number=po.get("po_number") or po["id"],
+                render_fn=lambda: render_bestellung_pdf(po, items),
+                persist=is_locked,
+            )
         except Exception as exc:
             st.error(f"PDF-Generierung fehlgeschlagen: {exc}")
             return
         st.session_state[f"po_pdf_{po['id']}"] = pdf_bytes
-        st.success(f"PDF generiert ({len(pdf_bytes) // 1024} KB).")
+        if has_persisted:
+            st.success(f"PDF geladen ({len(pdf_bytes) // 1024} KB).")
+        else:
+            st.success(f"PDF generiert ({len(pdf_bytes) // 1024} KB).")
 
     pdf_bytes = st.session_state.get(f"po_pdf_{po['id']}")
     if pdf_bytes:

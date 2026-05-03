@@ -447,6 +447,22 @@ def _render_action_buttons(inv: dict[str, Any]) -> None:
             except Exception as exc:
                 st.error(f"Festschreiben fehlgeschlagen: {exc}")
                 return
+            # PDF byte-stable im Storage festschreiben (GoBD)
+            try:
+                fresh = repo.get_invoice(invoice_id)
+                fresh_items = repo.list_invoice_items(invoice_id)
+                from lib.beleg_generator import render_rechnung_pdf
+                from lib.pdf_storage import persist_after_lock
+                pdf_bytes = render_rechnung_pdf(fresh, fresh_items)
+                persist_after_lock(
+                    table="invoices",
+                    doc_id=invoice_id,
+                    beleg_type="invoice",
+                    beleg_number=new_nr,
+                    pdf_bytes=pdf_bytes,
+                )
+            except Exception as exc:
+                st.warning(f"Rechnung gesperrt, aber PDF-Archivierung fehlgeschlagen: {exc}")
             st.success(f"Rechnung **{new_nr}** ausgestellt + GoBD-gesperrt.")
             st.rerun()
     elif next_action:
@@ -547,6 +563,22 @@ def _render_reverse_modal(inv: dict[str, Any]) -> None:
             except Exception as exc:
                 st.error(f"Storno fehlgeschlagen: {exc}")
                 return
+            # Storno-PDF byte-stable archivieren
+            try:
+                storno = repo.get_invoice(storno_id)
+                storno_items = repo.list_invoice_items(storno_id)
+                from lib.beleg_generator import render_rechnung_pdf
+                from lib.pdf_storage import persist_after_lock
+                pdf_bytes = render_rechnung_pdf(storno, storno_items)
+                persist_after_lock(
+                    table="invoices",
+                    doc_id=storno_id,
+                    beleg_type="invoice",
+                    beleg_number=storno.get("invoice_number") or storno_id,
+                    pdf_bytes=pdf_bytes,
+                )
+            except Exception as exc:
+                st.warning(f"Storno erstellt, PDF-Archivierung fehlgeschlagen: {exc}")
             st.session_state.pop(f"inv_reverse_modal_{invoice_id}", None)
             st.success(f"Stornorechnung erzeugt (`{storno_id[:8]}…`). Wechsle zur Liste.")
             st.rerun()
@@ -690,13 +722,22 @@ def _render_items_editor(inv: dict[str, Any]) -> None:
 def _render_pdf_section(inv: dict[str, Any]) -> None:
     items = repo.list_invoice_items(inv["id"])
     has_items = bool(items)
+    is_locked = bool(inv.get("locked_at"))
+    has_persisted = bool(inv.get("pdf_storage_path"))
 
     c1, c2 = st.columns([3, 2])
     if not has_items:
         c1.caption("ℹ️ Keine Positionen erfasst.")
+    elif has_persisted:
+        c1.caption("📑 Festgeschriebenes PDF aus Archiv (byte-stable, GoBD).")
 
+    primary_label = (
+        "⬇ Rechnung-PDF laden (Archiv)"
+        if has_persisted
+        else "📄 Rechnung-PDF generieren"
+    )
     if c1.button(
-        "📄 Rechnung-PDF generieren",
+        primary_label,
         key=f"gen_inv_pdf_{inv['id']}",
         type="primary",
         use_container_width=True,
@@ -704,19 +745,30 @@ def _render_pdf_section(inv: dict[str, Any]) -> None:
     ):
         try:
             from lib.beleg_generator import render_rechnung_pdf
-            pdf_bytes = render_rechnung_pdf(inv, items)
+            from lib.pdf_storage import render_or_fetch
+            pdf_bytes, _ = render_or_fetch(
+                table="invoices",
+                doc=inv,
+                beleg_type="invoice",
+                beleg_number=inv.get("invoice_number") or inv["id"],
+                render_fn=lambda: render_rechnung_pdf(inv, items),
+                persist=is_locked,
+            )
         except Exception as exc:
             st.error(f"PDF-Generierung fehlgeschlagen: {exc}")
             return
         st.session_state[f"inv_pdf_{inv['id']}"] = pdf_bytes
-        st.success(f"PDF generiert ({len(pdf_bytes) // 1024} KB).")
+        if has_persisted:
+            st.success(f"PDF geladen ({len(pdf_bytes) // 1024} KB).")
+        else:
+            st.success(f"PDF generiert ({len(pdf_bytes) // 1024} KB).")
 
     if c1.button(
         "📋 Proforma-PDF",
         key=f"gen_proforma_pdf_{inv['id']}",
         use_container_width=True,
         disabled=not has_items,
-        help="Vorab-Information für Zoll/Anfrage — keine Zahlungsaufforderung.",
+        help="Vorab-Information für Zoll/Anfrage — keine Zahlungsaufforderung. Wird nicht archiviert.",
     ):
         try:
             from lib.beleg_generator import render_proforma_pdf

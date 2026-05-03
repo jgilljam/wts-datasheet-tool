@@ -448,6 +448,24 @@ def _render_action_buttons(o: dict[str, Any]) -> None:
         except Exception as exc:
             st.error(f"Status-Update fehlgeschlagen: {exc}")
             return
+        # Auto-Persist beim Bestätigen — Auftragsbestätigung byte-stable archivieren
+        if next_status == "confirmed":
+            try:
+                from lib.beleg_generator import render_auftragsbestaetigung_pdf
+                from lib.pdf_storage import persist_after_lock
+                fresh = repo.get_order(order_id)
+                fresh_items = repo.list_order_items(order_id)
+                if fresh and fresh_items:
+                    pdf_bytes = render_auftragsbestaetigung_pdf(fresh, fresh_items)
+                    persist_after_lock(
+                        table="orders",
+                        doc_id=order_id,
+                        beleg_type="order",
+                        beleg_number=fresh["order_number"],
+                        pdf_bytes=pdf_bytes,
+                    )
+            except Exception as exc:
+                st.warning(f"Status gesetzt, aber PDF-Archivierung fehlgeschlagen: {exc}")
         st.success(f"Status: {ORDER_STATUS_LABELS.get(next_status, next_status)}")
         st.rerun()
 
@@ -841,13 +859,24 @@ def _render_fulfillment_balance(o: dict[str, Any]) -> None:
 def _render_pdf_section(order: dict[str, Any]) -> None:
     items = repo.list_order_items(order["id"])
     has_items = bool(items)
+    is_locked = bool(order.get("locked_at")) or order.get("status") in (
+        "confirmed", "in_production", "shipped", "done"
+    )
+    has_persisted = bool(order.get("pdf_storage_path"))
 
     c1, c2 = st.columns([3, 2])
     if not has_items:
         c1.caption("ℹ️ Keine Positionen erfasst — die Auftragsbestätigung wäre leer.")
+    elif has_persisted:
+        c1.caption("📑 Festgeschriebenes PDF aus Archiv (byte-stable, GoBD).")
 
+    primary_label = (
+        "⬇ Auftragsbestätigung-PDF laden (Archiv)"
+        if has_persisted
+        else "📄 Auftragsbestätigung-PDF generieren"
+    )
     if c1.button(
-        "📄 Auftragsbestätigung-PDF generieren",
+        primary_label,
         key=f"gen_order_pdf_{order['id']}",
         type="primary",
         use_container_width=True,
@@ -855,12 +884,23 @@ def _render_pdf_section(order: dict[str, Any]) -> None:
     ):
         try:
             from lib.beleg_generator import render_auftragsbestaetigung_pdf
-            pdf_bytes = render_auftragsbestaetigung_pdf(order, items)
+            from lib.pdf_storage import render_or_fetch
+            pdf_bytes, _ = render_or_fetch(
+                table="orders",
+                doc=order,
+                beleg_type="order",
+                beleg_number=order.get("order_number") or order["id"],
+                render_fn=lambda: render_auftragsbestaetigung_pdf(order, items),
+                persist=is_locked,
+            )
         except Exception as exc:
             st.error(f"PDF-Generierung fehlgeschlagen: {exc}")
             return
         st.session_state[f"order_pdf_{order['id']}"] = pdf_bytes
-        st.success(f"PDF generiert ({len(pdf_bytes) // 1024} KB).")
+        if has_persisted:
+            st.success(f"PDF geladen ({len(pdf_bytes) // 1024} KB).")
+        else:
+            st.success(f"PDF generiert ({len(pdf_bytes) // 1024} KB).")
 
     pdf_bytes = st.session_state.get(f"order_pdf_{order['id']}")
     if pdf_bytes:

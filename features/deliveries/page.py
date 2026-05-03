@@ -481,6 +481,24 @@ def _render_status_control(d: dict[str, Any]) -> None:
         except Exception as exc:  # noqa: BLE001
             st.error(f"Status-Update fehlgeschlagen: {exc}")
             return
+        # Auto-Persist: Lieferschein byte-stable festschreiben bei shipped/received
+        if new_status in ("shipped", "received"):
+            try:
+                from lib.lieferschein_generator import render_lieferschein_pdf
+                from lib.pdf_storage import persist_after_lock
+                fresh = repo.get_delivery(delivery_id)
+                fresh_items = repo.list_delivery_items(delivery_id)
+                if fresh and fresh_items:
+                    pdf_bytes = render_lieferschein_pdf(fresh, fresh_items)
+                    persist_after_lock(
+                        table="deliveries",
+                        doc_id=delivery_id,
+                        beleg_type="delivery",
+                        beleg_number=fresh["delivery_number"],
+                        pdf_bytes=pdf_bytes,
+                    )
+            except Exception as exc:  # noqa: BLE001
+                st.warning(f"Status gesetzt, aber PDF-Archivierung fehlgeschlagen: {exc}")
         msg = f"Status: {STATUS_LABELS_DE.get(new_status, new_status)}"
         booked = (result or {}).get("booked", 0)
         if booked:
@@ -738,13 +756,24 @@ def _render_detail_tab() -> None:
 def _render_pdf_section(delivery: dict[str, Any]) -> None:
     items = repo.list_delivery_items(delivery["id"])
     has_items = bool(items)
+    is_locked = bool(delivery.get("locked_at")) or delivery.get("status") in (
+        "shipped", "received", "cancelled"
+    )
+    has_persisted = bool(delivery.get("pdf_storage_path"))
 
     c1, c2 = st.columns([3, 2])
     if not has_items:
         c1.caption("ℹ️ Keine Positionen erfasst — der Lieferschein wäre leer. Erst Items speichern.")
+    elif has_persisted:
+        c1.caption("📑 Festgeschriebenes PDF aus Archiv (byte-stable, GoBD).")
 
+    primary_label = (
+        "⬇ Lieferschein-PDF laden (Archiv)"
+        if has_persisted
+        else "📄 Lieferschein-PDF generieren"
+    )
     if c1.button(
-        "📄 Lieferschein-PDF generieren",
+        primary_label,
         key=f"gen_pdf_{delivery['id']}",
         type="primary",
         use_container_width=True,
@@ -752,12 +781,23 @@ def _render_pdf_section(delivery: dict[str, Any]) -> None:
     ):
         try:
             from lib.lieferschein_generator import render_lieferschein_pdf
-            pdf_bytes = render_lieferschein_pdf(delivery, items)
+            from lib.pdf_storage import render_or_fetch
+            pdf_bytes, _ = render_or_fetch(
+                table="deliveries",
+                doc=delivery,
+                beleg_type="delivery",
+                beleg_number=delivery.get("delivery_number") or delivery["id"],
+                render_fn=lambda: render_lieferschein_pdf(delivery, items),
+                persist=is_locked,
+            )
         except Exception as exc:  # noqa: BLE001
             st.error(f"PDF-Generierung fehlgeschlagen: {exc}")
             return
         st.session_state[f"pdf_{delivery['id']}"] = pdf_bytes
-        st.success(f"PDF generiert ({len(pdf_bytes) // 1024} KB).")
+        if has_persisted:
+            st.success(f"PDF geladen ({len(pdf_bytes) // 1024} KB).")
+        else:
+            st.success(f"PDF generiert ({len(pdf_bytes) // 1024} KB).")
 
     pdf_bytes = st.session_state.get(f"pdf_{delivery['id']}")
     if pdf_bytes:

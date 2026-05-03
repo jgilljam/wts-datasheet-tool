@@ -318,6 +318,28 @@ def _render_detail(qid: str) -> None:
                 else:
                     service.update_status(qid, target_status)
                     st.toast(f"✓ Status: {QUOTATION_STATUS_LABELS.get(target_status)}", icon="✅")
+                    # Auto-Persist on Lock: insb. beim Senden GoBD-Archiv anlegen
+                    if target_status in {"sent", "accepted", "rejected", "expired"}:
+                        try:
+                            from lib.beleg_generator import render_angebot_pdf
+                            from lib.pdf_storage import persist_after_lock
+                            fresh = repo.get_quotation(qid)
+                            fresh_items = repo.list_quotation_items(qid)
+                            if fresh and fresh_items:
+                                pdf_bytes = render_angebot_pdf(
+                                    fresh,
+                                    fresh_items,
+                                    hide_totals=bool(fresh.get("hide_totals_in_pdf")),
+                                )
+                                persist_after_lock(
+                                    table="quotations",
+                                    doc_id=qid,
+                                    beleg_type="quotation",
+                                    beleg_number=fresh["quotation_number"],
+                                    pdf_bytes=pdf_bytes,
+                                )
+                        except Exception as exc:
+                            st.warning(f"Status gesetzt, aber PDF-Archivierung fehlgeschlagen: {exc}")
                 st.rerun()
             except Exception as exc:
                 st.error(f"Fehler: {exc}")
@@ -328,7 +350,11 @@ def _render_detail(qid: str) -> None:
             st.rerun()
 
     # PDF-Download — Toggle wird unterhalb gerendert, Button bleibt in cols[2]
-    pdf_clicked = cols[2].button("📄 PDF erzeugen", use_container_width=True, key=f"pdf_{qid}")
+    has_persisted = bool(q.get("pdf_storage_path"))
+    pdf_button_label = (
+        "⬇ Angebot-PDF laden (Archiv)" if has_persisted else "📄 PDF erzeugen"
+    )
+    pdf_clicked = cols[2].button(pdf_button_label, use_container_width=True, key=f"pdf_{qid}")
 
     if cols[3].button("🗑 Löschen", use_container_width=True, key=f"del_{qid}"):
         if q.get("status") not in {"draft", "cancelled"}:
@@ -348,7 +374,8 @@ def _render_detail(qid: str) -> None:
         key=f"hide_totals_{qid}",
         help="Zeigt nur Pos · Artikel · Menge · Preis. Keine Rabatt-/USt-Spalten, keine Summen.",
     )
-    if hide_totals != default_hide:
+    toggle_changed = hide_totals != default_hide
+    if toggle_changed:
         try:
             supabase().table("quotations").update(
                 {"hide_totals_in_pdf": hide_totals}
@@ -356,13 +383,35 @@ def _render_detail(qid: str) -> None:
         except Exception as exc:
             pdf_c1.warning(f"Konnte Einstellung nicht persistieren: {exc}")
 
+    # Storage-First-Caption
+    if has_persisted and not toggle_changed:
+        pdf_c1.caption("📑 Festgeschriebenes PDF aus Archiv (byte-stable, GoBD).")
+
     if pdf_clicked:
-        from lib.beleg_generator import render_angebot_pdf
-        try:
-            pdf_bytes = render_angebot_pdf(q, items, hide_totals=hide_totals)
-            st.session_state[f"pdf_bytes_{qid}"] = pdf_bytes
-        except Exception as exc:
-            st.error(f"PDF-Fehler: {exc}")
+        if not items:
+            st.error("Keine Positionen erfasst.")
+        else:
+            try:
+                from lib.beleg_generator import render_angebot_pdf
+                from lib.pdf_storage import render_or_fetch
+                # Toggle wechselt → altes PDF ignorieren und überschreiben
+                doc_for_fetch = (
+                    {**q, "pdf_storage_path": None} if toggle_changed else q
+                )
+                persist_pdf = q.get("status") in {
+                    "sent", "accepted", "rejected", "converted", "expired",
+                }
+                pdf_bytes, _ = render_or_fetch(
+                    table="quotations",
+                    doc=doc_for_fetch,
+                    beleg_type="quotation",
+                    beleg_number=q.get("quotation_number") or qid,
+                    render_fn=lambda: render_angebot_pdf(q, items, hide_totals=hide_totals),
+                    persist=persist_pdf,
+                )
+                st.session_state[f"pdf_bytes_{qid}"] = pdf_bytes
+            except Exception as exc:
+                st.error(f"PDF-Fehler: {exc}")
 
     if st.session_state.get(f"pdf_bytes_{qid}"):
         suffix = "-Quote" if hide_totals else ""
