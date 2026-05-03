@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>{{ doc_label }} {{ doc_number }}</title>
+  <link rel="stylesheet" href="beleg.css">
+</head>
+<body>
+
+<header class="page-header">
+  <img class="logo" src="{{ logo_uri }}" alt="WTS">
+  <div class="header-meta">
+    <div class="company">Weber Trading &amp; Service</div>
+    <div class="tagline">Industrial Trading · seit 1997</div>
+    <div class="company-addr">Kaiserstraße 35 · 41061 Mönchengladbach</div>
+  </div>
+</header>
+
+<section class="title-row">
+  <div>
+    <div class="eyebrow">{{ doc_label }}</div>
+    <h1>{{ doc_number }}</h1>
+  </div>
+  <div class="meta-grid">
+    <div class="cell"><div class="label">Datum</div><div class="val">{{ today }}</div></div>
+    {% if doc_date %}
+    <div class="cell"><div class="label">{{ doc_date_label }}</div><div class="val">{{ doc_date }}</div></div>
+    {% endif %}
+    {% if due_date %}
+    <div class="cell"><div class="label">{{ due_date_label }}</div><div class="val">{{ due_date }}</div></div>
+    {% endif %}
+    {% if reference %}
+    <div class="cell"><div class="label">{{ reference_label }}</div><div class="val">{{ reference }}</div></div>
+    {% endif %}
+    {% if d.incoterms %}
+    <div class="cell"><div class="label">Incoterms</div><div class="val">{{ d.incoterms }}{% if d.incoterms_place %} {{ d.incoterms_place }}{% endif %}</div></div>
+    {% endif %}
+    {% if d.payment_terms_days %}
+    <div class="cell"><div class="label">Zahlungsziel</div><div class="val">{{ d.payment_terms_days }} Tage</div></div>
+    {% endif %}
+  </div>
+</section>
+
+{% if dropship_note %}
+<section class="dropship-banner">
+  <strong>🚚 Streckengeschäft (Direktlieferung)</strong> — {{ dropship_note }}
+</section>
+{% endif %}
+
+{% if reverse_charge %}
+<section class="info-banner">
+  <strong>💶 Reverse-Charge</strong> — Steuerschuldnerschaft des Leistungsempfängers nach §13b UStG.
+  Nettorechnung (0% USt).
+</section>
+{% endif %}
+
+<section class="parties">
+  <div class="party-card">
+    <div class="card-label">{{ recipient_label }}</div>
+    <div class="party-name">{{ party.legal_name or "—" }}</div>
+    {% if shipping_addr %}
+    <div class="addr">
+      {% if shipping_addr.label %}<div class="addr-label">{{ shipping_addr.label }}</div>{% endif %}
+      <div>{{ shipping_addr.street or "" }}{% if shipping_addr.street_2 %}, {{ shipping_addr.street_2 }}{% endif %}</div>
+      <div>{{ (shipping_addr.zip or "") }} {{ shipping_addr.city or "" }}</div>
+      <div>{{ shipping_addr.country_code or "" }}</div>
+    </div>
+    {% endif %}
+    {% if party.vat_id %}<div class="vat">USt-IdNr.: {{ party.vat_id }}</div>{% endif %}
+  </div>
+</section>
+
+<section class="items">
+  <h2>Positionen</h2>
+  {% if items %}
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th class="col-pos">Pos</th>
+        <th class="col-sku">SKU</th>
+        <th class="col-desc">Bezeichnung</th>
+        <th class="col-qty">Menge</th>
+        <th class="col-unit">Einheit</th>
+        <th class="col-price">{{ price_label }}</th>
+        <th class="col-disc">Rabatt</th>
+        <th class="col-tax">USt</th>
+        <th class="col-total">Summe netto</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+      <tr>
+        <td class="col-pos">{{ it.pos_nr }}</td>
+        <td class="col-sku mono">{{ it.sku or "" }}</td>
+        <td class="col-desc">
+          {{ it.title or it.description_override or "—" }}
+          {% if it.description_override and it.title %}<div class="sub">{{ it.description_override }}</div>{% endif %}
+          {% if it.is_dropship %}<div class="ds-mark">🚚 Direktlieferung</div>{% endif %}
+        </td>
+        <td class="col-qty num">{{ it.qty_display }}</td>
+        <td class="col-unit">{{ it.unit or "Stk" }}</td>
+        <td class="col-price num">{{ it.unit_price_eur }}</td>
+        <td class="col-disc num">{% if it.discount_pct %}{{ it.discount_pct }} %{% endif %}</td>
+        <td class="col-tax num">{{ it.tax_rate }} %</td>
+        <td class="col-total num">{{ it.line_total_eur }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">Keine Positionen erfasst.</p>
+  {% endif %}
+</section>
+
+<section class="totals-block">
+  <table class="totals-table">
+    {% if discount_total_eur %}
+    <tr><td class="label">Rabatt gesamt</td><td class="num">−{{ discount_total_eur }}</td></tr>
+    {% endif %}
+    <tr><td class="label">Netto</td><td class="num">{{ net_total_eur }}</td></tr>
+    <tr><td class="label">USt {{ tax_rate_summary }}</td><td class="num">{{ tax_total_eur }}</td></tr>
+    <tr class="total"><td class="label"><strong>Brutto / Gesamt</strong></td><td class="num"><strong>{{ gross_total_eur }}</strong></td></tr>
+  </table>
+</section>
+
+{% if d.notes %}
+<section class="block">
+  <h2>Bemerkungen</h2>
+  <p>{{ d.notes }}</p>
+</section>
+{% endif %}
+
+{% if footer_hint %}
+<section class="footer-hint">{{ footer_hint }}</section>
+{% endif %}
+
+{% if show_signature %}
+<section class="signatures">
+  <div class="sig">
+    <div class="line"></div>
+    <div class="sig-label">Datum, Unterschrift {{ recipient_label }}</div>
+  </div>
+  <div class="sig">
+    <div class="line"></div>
+    <div class="sig-label">Datum, Unterschrift WTS</div>
+  </div>
+</section>
+{% endif %}
+
+</body>
+</html>

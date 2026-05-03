@@ -673,7 +673,48 @@ def _render_detail_tab() -> None:
     _render_smart_buttons(p)
     st.divider()
 
+    st.markdown("### Bestellung-PDF")
+    _render_pdf_section(p)
+    st.divider()
+
     _render_history(p)
+
+
+def _render_pdf_section(po: dict[str, Any]) -> None:
+    items = repo.list_po_items(po["id"])
+    has_items = bool(items)
+
+    c1, c2 = st.columns([3, 2])
+    if not has_items:
+        c1.caption("ℹ️ Keine Positionen erfasst — die Bestellung wäre leer.")
+
+    if c1.button(
+        "📄 Bestellung-PDF generieren",
+        key=f"gen_po_pdf_{po['id']}",
+        type="primary",
+        use_container_width=True,
+        disabled=not has_items,
+    ):
+        try:
+            from lib.beleg_generator import render_bestellung_pdf
+            pdf_bytes = render_bestellung_pdf(po, items)
+        except Exception as exc:
+            st.error(f"PDF-Generierung fehlgeschlagen: {exc}")
+            return
+        st.session_state[f"po_pdf_{po['id']}"] = pdf_bytes
+        st.success(f"PDF generiert ({len(pdf_bytes) // 1024} KB).")
+
+    pdf_bytes = st.session_state.get(f"po_pdf_{po['id']}")
+    if pdf_bytes:
+        nr = po.get("po_number") or "Bestellung"
+        c2.download_button(
+            "⬇ Download",
+            data=pdf_bytes,
+            file_name=f"{nr}.pdf",
+            mime="application/pdf",
+            key=f"dl_po_pdf_{po['id']}",
+            use_container_width=True,
+        )
 
 
 # =====================================================================

@@ -593,7 +593,48 @@ def _render_detail_tab() -> None:
     _render_smart_buttons(o)
     st.divider()
 
+    st.markdown("### Auftragsbestätigung-PDF")
+    _render_pdf_section(o)
+    st.divider()
+
     _render_history(o)
+
+
+def _render_pdf_section(order: dict[str, Any]) -> None:
+    items = repo.list_order_items(order["id"])
+    has_items = bool(items)
+
+    c1, c2 = st.columns([3, 2])
+    if not has_items:
+        c1.caption("ℹ️ Keine Positionen erfasst — die Auftragsbestätigung wäre leer.")
+
+    if c1.button(
+        "📄 Auftragsbestätigung-PDF generieren",
+        key=f"gen_order_pdf_{order['id']}",
+        type="primary",
+        use_container_width=True,
+        disabled=not has_items,
+    ):
+        try:
+            from lib.beleg_generator import render_auftragsbestaetigung_pdf
+            pdf_bytes = render_auftragsbestaetigung_pdf(order, items)
+        except Exception as exc:
+            st.error(f"PDF-Generierung fehlgeschlagen: {exc}")
+            return
+        st.session_state[f"order_pdf_{order['id']}"] = pdf_bytes
+        st.success(f"PDF generiert ({len(pdf_bytes) // 1024} KB).")
+
+    pdf_bytes = st.session_state.get(f"order_pdf_{order['id']}")
+    if pdf_bytes:
+        nr = order.get("order_number") or "Auftragsbestaetigung"
+        c2.download_button(
+            "⬇ Download",
+            data=pdf_bytes,
+            file_name=f"{nr}.pdf",
+            mime="application/pdf",
+            key=f"dl_order_pdf_{order['id']}",
+            use_container_width=True,
+        )
 
 
 # =====================================================================
