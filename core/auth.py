@@ -22,19 +22,18 @@ def require_login() -> None:
     if st.session_state.get("authed"):
         return
 
-    st.markdown(
-        f"""
-        <div class="wts-login-wrap">
-          <img src="data:image/png;base64,{logo_b64()}" alt="WTS">
-          <h2>WTS-Tool</h2>
-          <div class="sub">Anmeldung für WTS-Mitarbeiter</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
     col_l, col_c, col_r = st.columns([1, 2, 1])
     with col_c:
+        st.markdown(
+            f"""
+            <div class="wts-login-head">
+              <img src="data:image/png;base64,{logo_b64()}" alt="WTS">
+              <h2>WTS-Tool</h2>
+              <div class="sub">Anmeldung für WTS-Mitarbeiter</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         with st.form("login", clear_on_submit=False):
             pwd = st.text_input(
                 "Passwort",

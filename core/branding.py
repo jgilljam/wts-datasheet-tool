@@ -26,8 +26,17 @@ def apply_branding() -> None:
     st.markdown(
         f"""
         <style>
-          .block-container {{ padding-top: 2rem; padding-bottom: 4rem; max-width: 880px; }}
+          /* Wide-Layout mit selbstgesetztem Max-Width für ruhige Lesbarkeit */
+          .block-container {{
+            padding-top: 1.75rem;
+            padding-bottom: 4rem;
+            max-width: 1240px;
+          }}
           h1, h2, h3 {{ letter-spacing: -0.02em; color: {PRIMARY}; }}
+          h1 {{ font-weight: 700; }}
+          h2 {{ font-weight: 650; }}
+          h3 {{ font-weight: 600; }}
+
           .wts-eyebrow {{
             font-family: ui-monospace, "JetBrains Mono", monospace;
             font-size: 0.72rem;
@@ -55,6 +64,8 @@ def apply_branding() -> None:
             color: {TEXT_SECONDARY};
             margin-top: 4px;
           }}
+
+          /* Pills — klassische Variante (default = subtle) */
           .wts-pill {{
             display: inline-block;
             padding: 2px 10px;
@@ -66,15 +77,32 @@ def apply_branding() -> None:
             color: {TEXT_SECONDARY};
             margin-right: 6px;
           }}
-          .wts-pill.accent {{ color: {ACCENT}; border-color: {ACCENT}; }}
+          .wts-pill.accent {{ color: {ACCENT}; border-color: {ACCENT}; background: {ACCENT}1A; }}
+          .wts-pill.primary {{ color: {PRIMARY}; border-color: {PRIMARY}; background: {PRIMARY}14; }}
+          .wts-pill.success {{ color: #047857; border-color: #10B98155; background: #10B9811A; }}
+          .wts-pill.warn    {{ color: #B45309; border-color: #F59E0B55; background: #F59E0B1A; }}
+          .wts-pill.danger  {{ color: #B91C1C; border-color: #EF444455; background: #EF44441A; }}
+
+          /* Cards mit 2-Step Shadow + Hover-Lift */
           .wts-card {{
-            background: {SUBTLE};
+            background: white;
             border: 1px solid {BORDER};
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 1.25rem 1.5rem;
             margin-bottom: 1rem;
+            box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.05);
+            transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
           }}
+          .wts-card:hover {{
+            box-shadow: 0 4px 12px rgba(15,23,42,.08), 0 2px 4px rgba(15,23,42,.04);
+            transform: translateY(-1px);
+            border-color: #D4D4D8;
+          }}
+          .wts-card.subtle {{ background: {SUBTLE}; }}
+          .wts-card.flat   {{ box-shadow: none; }}
+          .wts-card.flat:hover {{ transform: none; box-shadow: none; }}
           .wts-card h3 {{ margin-top: 0; font-size: 1.05rem; }}
+
           .wts-meta-grid {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -113,6 +141,116 @@ def apply_branding() -> None:
             display: flex;
             justify-content: space-between;
           }}
+
+          /* Native Streamlit-Container (st.container(border=True)) im WTS-Look */
+          [data-testid="stVerticalBlockBorderWrapper"] {{
+            border-radius: 14px !important;
+            border-color: {BORDER} !important;
+            box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.05);
+            transition: box-shadow .18s ease, transform .18s ease;
+          }}
+          [data-testid="stVerticalBlockBorderWrapper"]:hover {{
+            box-shadow: 0 4px 12px rgba(15,23,42,.08), 0 2px 4px rgba(15,23,42,.04);
+          }}
+
+          /* Toast — WTS-Akzent, Slide-In */
+          [data-testid="stToast"] {{
+            border-left: 3px solid {ACCENT} !important;
+            border-radius: 10px !important;
+            box-shadow: 0 8px 24px rgba(15,23,42,.10), 0 2px 4px rgba(15,23,42,.06) !important;
+          }}
+
+          /* Buttons — Micro-Interaktionen */
+          .stButton > button, .stDownloadButton > button, .stFormSubmitButton > button {{
+            border-radius: 8px;
+            font-weight: 500;
+            transition: transform .08s ease, box-shadow .12s ease, background .12s ease;
+          }}
+          .stButton > button:hover, .stDownloadButton > button:hover, .stFormSubmitButton > button:hover {{
+            box-shadow: 0 2px 6px rgba(15,23,42,.08);
+          }}
+          .stButton > button:active, .stDownloadButton > button:active, .stFormSubmitButton > button:active {{
+            transform: translateY(1px);
+          }}
+          /* Primary-Button: WTS-Anthrazit/Primary statt Streamlit-Default-Rot */
+          .stButton > button[kind="primary"], .stFormSubmitButton > button[kind="primary"] {{
+            background: {PRIMARY};
+            border-color: {PRIMARY};
+          }}
+          .stButton > button[kind="primary"]:hover, .stFormSubmitButton > button[kind="primary"]:hover {{
+            background: #143358;
+            border-color: #143358;
+          }}
+
+          /* st.metric — feinerer Look */
+          [data-testid="stMetric"] {{
+            background: white;
+            border: 1px solid {BORDER};
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            box-shadow: 0 1px 2px rgba(15,23,42,.03);
+          }}
+          [data-testid="stMetricLabel"] {{
+            font-family: ui-monospace, "JetBrains Mono", monospace !important;
+            font-size: 0.65rem !important;
+            letter-spacing: 0.16em !important;
+            text-transform: uppercase !important;
+            color: {TEXT_SECONDARY} !important;
+          }}
+          [data-testid="stMetricValue"] {{
+            color: {PRIMARY} !important;
+            font-weight: 700 !important;
+            letter-spacing: -0.02em !important;
+          }}
+
+          /* Tabs — schlanker, mit Akzent-Underline */
+          .stTabs [data-baseweb="tab-list"] {{
+            border-bottom: 1px solid {BORDER};
+            gap: 4px;
+          }}
+          .stTabs [data-baseweb="tab"] {{
+            padding-top: 8px;
+            padding-bottom: 8px;
+            font-weight: 500;
+          }}
+          .stTabs [aria-selected="true"] {{
+            color: {PRIMARY} !important;
+          }}
+
+          /* Pills/Segmented-Control (st.pills, st.segmented_control) */
+          [data-testid="stPills"] button, [data-testid="stSegmentedControl"] button {{
+            border-radius: 999px !important;
+            font-weight: 500;
+          }}
+
+          /* Dialog (st.dialog) — moderner Schatten */
+          [data-testid="stDialog"] > div {{
+            border-radius: 16px !important;
+            box-shadow: 0 24px 64px rgba(15,23,42,.18), 0 4px 12px rgba(15,23,42,.10) !important;
+          }}
+
+          /* Sidebar — abgesetzt mit dezentem Hintergrund */
+          section[data-testid="stSidebar"] {{
+            background: {SUBTLE};
+            border-right: 1px solid {BORDER};
+          }}
+          section[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] {{
+            border-radius: 8px;
+          }}
+
+          /* Inputs — etwas weicher */
+          .stTextInput input, .stNumberInput input, .stDateInput input,
+          .stTextArea textarea, [data-baseweb="select"] > div {{
+            border-radius: 8px !important;
+          }}
+
+          /* DataFrames — etwas Luft + abgerundet */
+          [data-testid="stDataFrame"] {{
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid {BORDER};
+          }}
+
           /* hide hamburger + footer */
           [data-testid="stToolbar"] {{ display: none; }}
           footer {{ visibility: hidden; }}
@@ -123,21 +261,33 @@ def apply_branding() -> None:
             width: 100%;
             height: 720px;
             border: 1px solid {BORDER};
-            border-radius: 8px;
+            border-radius: 10px;
+            box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.05);
           }}
 
-          /* Login centering */
-          .wts-login-wrap {{
-            max-width: 400px;
-            margin: 4rem auto 0 auto;
-            padding: 2rem;
-            border: 1px solid {BORDER};
-            border-radius: 16px;
+          /* Login — Logo + Form als ein Block visuell */
+          .wts-login-head {{
+            margin-top: 4rem;
+            padding: 2rem 2rem 1rem 2rem;
+            border-radius: 18px 18px 0 0;
             background: white;
+            border: 1px solid {BORDER};
+            border-bottom: none;
+            text-align: center;
           }}
-          .wts-login-wrap img {{ height: 56px; display: block; margin: 0 auto 1.5rem auto; }}
-          .wts-login-wrap h2 {{ text-align: center; font-size: 1.2rem; margin-bottom: 0.25rem; }}
-          .wts-login-wrap .sub {{ text-align: center; color: {TEXT_SECONDARY}; font-size: 0.85rem; margin-bottom: 1.5rem; }}
+          .wts-login-head img {{ height: 56px; display: block; margin: 0 auto 1.25rem auto; }}
+          .wts-login-head h2 {{ text-align: center; font-size: 1.2rem; margin: 0 0 0.25rem 0; }}
+          .wts-login-head .sub {{ color: {TEXT_SECONDARY}; font-size: 0.85rem; margin-bottom: 0; }}
+
+          /* Form direkt unter dem Login-Head — visuell verbunden */
+          .wts-login-head + div [data-testid="stForm"] {{
+            background: white;
+            border: 1px solid {BORDER};
+            border-top: 1px solid {BORDER};
+            border-radius: 0 0 18px 18px;
+            padding: 1.5rem 2rem 2rem 2rem;
+            box-shadow: 0 12px 32px rgba(15,23,42,.08), 0 2px 6px rgba(15,23,42,.04);
+          }}
         </style>
         """,
         unsafe_allow_html=True,

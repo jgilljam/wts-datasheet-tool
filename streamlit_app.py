@@ -17,7 +17,7 @@ from features import articles, datasheet, deliveries, invoices, orders, parties,
 st.set_page_config(
     page_title="WTS-Tool",
     page_icon=str(LOGO_PATH),
-    layout="centered",
+    layout="wide",
     initial_sidebar_state="expanded",
 )
 
