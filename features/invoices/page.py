@@ -10,6 +10,7 @@ import streamlit as st
 
 from core.branding import render_footer, render_header
 from core.ui.address_picker import render_address_picker
+from core.ui.empty import render_empty_data, render_empty_filter
 from core.ui.kpi import render_kpis
 from core.ui.status import render_status_pill, render_status_stepper
 from core.utils import cents_to_eur, eur_to_cents, format_date, parse_date
@@ -81,9 +82,10 @@ def _kpis(rows: list[dict[str, Any]]) -> None:
 
 def _table(rows: list[dict[str, Any]]) -> None:
     if not rows:
-        st.info(
-            "📭 Keine Rechnungen mit diesen Filtern. "
-            "Erstelle eine Rechnung über Aufträge → Detail → Rechnung erstellen."
+        render_empty_filter(
+            label="Keine Rechnungen mit diesen Filtern.",
+            reset_keys=["invoices_list_statuses", "invoices_list_search"],
+            extra_caption="Tipp: Rechnungen entstehen am einfachsten aus einem Auftrag (Detail → Rechnung erstellen).",
         )
         return
     today = date.today()
@@ -724,10 +726,10 @@ def _render_history(inv: dict[str, Any]) -> None:
 def _render_detail_tab() -> None:
     invoices = repo.list_invoices(limit=500)
     if not invoices:
-        st.info(
-            "📭 Noch keine Rechnungen. "
-            "Erstelle deine erste Rechnung über Aufträge → Detail → Rechnung erstellen "
-            "oder im Tab Neu anlegen."
+        render_empty_data(
+            title="Noch keine Rechnungen",
+            description="Erstelle deine erste Rechnung am einfachsten aus einem Auftrag (Detail → Rechnung erstellen) oder freihändig im Tab „Neu anlegen“.",
+            icon="📄",
         )
         return
 

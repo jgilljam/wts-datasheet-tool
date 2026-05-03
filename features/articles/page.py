@@ -14,6 +14,7 @@ import streamlit as st
 
 from core.branding import render_footer, render_header
 from core.db import supabase
+from core.ui.empty import render_empty_data, render_empty_filter
 
 
 @st.cache_data(ttl=30)
@@ -87,7 +88,10 @@ def _render_list_tab() -> None:
     m3.metric("Σ EK-Wert (Stamm)", f"{total_value_cents / 100:.2f} €")
 
     if not rows:
-        st.info("Keine Artikel mit diesen Filtern.")
+        render_empty_filter(
+            label="Keine Artikel mit diesen Filtern.",
+            reset_keys=["art_list_search", "art_list_show_inactive"],
+        )
         return
 
     df = pd.DataFrame(rows)
@@ -174,7 +178,11 @@ def _render_edit_tab() -> None:
         return
 
     if not articles:
-        st.info("Keine Artikel - leg im Tab 'Neu anlegen' welche an.")
+        render_empty_data(
+            title="Noch keine Artikel",
+            description="Leg deinen ersten Artikel im Tab „Neu anlegen“ an. Artikel sind die Grundlage für Lager, Lieferungen und Belege.",
+            icon="🔧",
+        )
         return
 
     options = {

@@ -9,6 +9,7 @@ import streamlit as st
 
 from core.branding import render_footer, render_header
 from core.db import supabase
+from core.ui.empty import render_empty_data, render_empty_filter
 
 
 PARTY_TYPE_LABELS = {
@@ -138,7 +139,10 @@ def _render_list_tab() -> None:
     m3.metric("Lieferanten", suppliers)
 
     if not rows:
-        st.info("Keine Parteien mit diesen Filtern.")
+        render_empty_filter(
+            label="Keine Parteien mit diesen Filtern.",
+            reset_keys=["parties_list_type", "parties_list_search", "parties_list_show_inactive"],
+        )
         return
 
     df = pd.DataFrame(rows)
@@ -244,7 +248,11 @@ def _render_edit_tab() -> None:
         return
 
     if not parties:
-        st.info("Keine Parteien - leg im Tab 'Neu anlegen' welche an.")
+        render_empty_data(
+            title="Noch keine Parteien",
+            description="Leg deinen ersten Kunden oder Lieferanten im Tab „Neu anlegen“ an.",
+            icon="👥",
+        )
         return
 
     options = {

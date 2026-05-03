@@ -11,6 +11,7 @@ import streamlit as st
 from core.branding import render_footer, render_header
 from core.db import supabase
 from core.ui.address_picker import render_address_picker
+from core.ui.empty import render_empty_data, render_empty_filter
 from core.ui.kpi import render_kpis
 from core.ui.status import render_status_pill, render_status_stepper
 from core.utils import cents_to_eur, eur_to_cents, format_date, parse_date
@@ -70,7 +71,10 @@ def _kpis(rows: list[dict[str, Any]]) -> None:
 
 def _table(rows: list[dict[str, Any]]) -> None:
     if not rows:
-        st.info("Keine Aufträge mit diesen Filtern.")
+        render_empty_filter(
+            label="Keine Aufträge mit diesen Filtern.",
+            reset_keys=["orders_list_statuses", "orders_list_search"],
+        )
         return
     today = date.today()
     data: list[dict[str, Any]] = []
@@ -611,7 +615,11 @@ def _render_history(o: dict[str, Any]) -> None:
 def _render_detail_tab() -> None:
     orders = repo.list_orders(limit=500)
     if not orders:
-        st.info("Noch keine Aufträge — leg zuerst einen im Tab **Neu anlegen** an.")
+        render_empty_data(
+            title="Noch keine Aufträge",
+            description="Leg deinen ersten Verkaufsauftrag an — manuell oder als Konvertierung einer Anfrage.",
+            icon="📑",
+        )
         return
 
     options: dict[str, str] = {}

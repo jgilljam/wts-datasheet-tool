@@ -9,6 +9,7 @@ import pandas as pd
 import streamlit as st
 
 from core.branding import render_footer, render_header
+from core.ui.empty import render_empty_data, render_empty_filter
 from core.db import supabase
 from core.ui.address_picker import render_address_picker
 from core.ui.kpi import render_kpis
@@ -70,7 +71,10 @@ def _kpis(rows: list[dict[str, Any]]) -> None:
 
 def _table(rows: list[dict[str, Any]]) -> None:
     if not rows:
-        st.info("Keine Bestellungen mit diesen Filtern.")
+        render_empty_filter(
+            label="Keine Bestellungen mit diesen Filtern.",
+            reset_keys=["po_list_statuses", "po_list_search"],
+        )
         return
     today = date.today()
     data: list[dict[str, Any]] = []
@@ -645,7 +649,11 @@ def _render_history(p: dict[str, Any]) -> None:
 def _render_detail_tab() -> None:
     pos = repo.list_pos(limit=500)
     if not pos:
-        st.info("Noch keine Bestellungen — leg zuerst eine im Tab **Neu anlegen** an.")
+        render_empty_data(
+            title="Noch keine Bestellungen",
+            description="Leg deine erste Lieferanten-Bestellung an — manuell oder per One-Click aus einem Auftrag.",
+            icon="🛒",
+        )
         return
 
     options: dict[str, str] = {}

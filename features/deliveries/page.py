@@ -19,6 +19,7 @@ from core.branding import render_footer, render_header
 from core.db import supabase
 from core.ui.address_picker import render_address_picker
 from core.ui.kpi import render_kpis
+from core.ui.empty import render_empty_data, render_empty_filter
 from core.ui.status import render_status_stepper
 from core.utils import format_date as _format_date_util, parse_date
 
@@ -95,7 +96,10 @@ def _urgency(row: dict[str, Any], today: date) -> str:
 
 def _table(rows: list[dict[str, Any]]) -> None:
     if not rows:
-        st.info("Keine Lieferungen mit diesen Filtern.")
+        render_empty_filter(
+            label="Keine Lieferungen mit diesen Filtern.",
+            reset_keys=["list_statuses", "list_direction", "list_search"],
+        )
         return
 
     today = date.today()
@@ -680,7 +684,11 @@ def _render_documents(d: dict[str, Any]) -> None:
 def _render_detail_tab() -> None:
     deliveries = repo.list_deliveries(limit=500)
     if not deliveries:
-        st.info("Noch keine Lieferungen vorhanden - leg zuerst eine im Tab 'Neu anlegen' an.")
+        render_empty_data(
+            title="Noch keine Lieferungen",
+            description="Leg deine erste Lieferung manuell an oder erstelle sie automatisch aus einem Auftrag/einer Bestellung.",
+            icon="📦",
+        )
         return
 
     options: dict[str, str] = {}
