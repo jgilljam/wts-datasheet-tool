@@ -109,6 +109,96 @@ def list_deliveries_for_order(order_id: str) -> list[dict[str, Any]]:
     )
 
 
+def get_fulfillment_balance(order_id: str) -> list[dict[str, Any]]:
+    """Restmengen-Bilanz pro Auftragsposition.
+
+    Aggregiert alle Lieferungen (delivery_items.qty_actual oder qty_expected) und
+    Rechnungen (order_items.qty_invoiced) und stellt sie der bestellten Menge
+    gegenüber.
+
+    Returns: Liste von dicts mit:
+      - pos_nr, sku, title, qty (bestellt)
+      - delivered (Summe qty_actual über alle deliveries)
+      - invoiced  (qty_invoiced auf order_items)
+      - open_delivery, open_invoice
+      - status_delivery, status_invoice ('open' | 'partial' | 'done')
+    """
+    items = (
+        supabase()
+        .table("order_items")
+        .select("pos_nr, qty, qty_invoiced, article_id, description_override, "
+                "articles(id, sku, title_de)")
+        .eq("order_id", order_id)
+        .order("pos_nr")
+        .execute()
+        .data
+    ) or []
+    if not items:
+        return []
+
+    # Lieferungen für den Auftrag, die als „erfüllt" zählen
+    fulfilled_outbound = ["handed_to_carrier", "in_transit", "delivered"]
+    deliveries = (
+        supabase()
+        .table("deliveries")
+        .select("id")
+        .eq("related_order_id", order_id)
+        .in_("status", fulfilled_outbound)
+        .execute()
+        .data
+    ) or []
+    delivery_ids = [d["id"] for d in deliveries]
+
+    delivered_by_article: dict[str, float] = {}
+    if delivery_ids:
+        delv_items = (
+            supabase()
+            .table("delivery_items")
+            .select("article_id, qty_actual, qty_expected")
+            .in_("delivery_id", delivery_ids)
+            .execute()
+            .data
+        ) or []
+        for it in delv_items:
+            aid = it.get("article_id")
+            if not aid:
+                continue
+            qty = float(it.get("qty_actual") or it.get("qty_expected") or 0)
+            delivered_by_article[aid] = delivered_by_article.get(aid, 0.0) + qty
+
+    rows: list[dict[str, Any]] = []
+    for it in items:
+        a = it.get("articles") or {}
+        ordered = float(it.get("qty") or 0)
+        delivered = delivered_by_article.get(it.get("article_id"), 0.0) if it.get("article_id") else 0.0
+        invoiced = float(it.get("qty_invoiced") or 0)
+        open_delv = max(ordered - delivered, 0.0)
+        open_inv = max(ordered - invoiced, 0.0)
+
+        def _status(done_qty: float, total: float) -> str:
+            if total <= 0:
+                return "—"
+            if done_qty <= 0:
+                return "open"
+            if done_qty + 1e-6 >= total:
+                return "done"
+            return "partial"
+
+        rows.append({
+            "pos_nr": it.get("pos_nr"),
+            "sku": a.get("sku"),
+            "title": it.get("description_override") or a.get("title_de") or "",
+            "qty": ordered,
+            "delivered": delivered,
+            "invoiced": invoiced,
+            "open_delivery": open_delv,
+            "open_invoice": open_inv,
+            "status_delivery": _status(delivered, ordered),
+            "status_invoice": _status(invoiced, ordered),
+        })
+    return rows
+
+
 def next_order_number(year: int) -> str:
     """`AB-2026-0001` (AB = Auftragsbestätigung)."""
     prefix = f"AB-{year}-"

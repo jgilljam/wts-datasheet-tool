@@ -651,6 +651,10 @@ def _render_detail_tab() -> None:
     _render_items_editor(o)
     st.divider()
 
+    st.markdown("### Bilanz: Liefer- und Rechnungsfortschritt")
+    _render_fulfillment_balance(o)
+    st.divider()
+
     st.markdown("### Lieferungen")
     _render_smart_buttons(o)
     st.divider()
@@ -660,6 +664,71 @@ def _render_detail_tab() -> None:
     st.divider()
 
     _render_history(o)
+
+
+def _render_fulfillment_balance(o: dict[str, Any]) -> None:
+    """Restmengen-Bilanz: bestellt vs. geliefert vs. fakturiert je Position."""
+    rows = repo.get_fulfillment_balance(o["id"])
+    if not rows:
+        st.caption("Keine Positionen — keine Bilanz.")
+        return
+
+    total_qty = sum(r["qty"] for r in rows)
+    total_delv = sum(r["delivered"] for r in rows)
+    total_inv = sum(r["invoiced"] for r in rows)
+
+    pct_delv = round((total_delv / total_qty) * 100) if total_qty > 0 else 0
+    pct_inv = round((total_inv / total_qty) * 100) if total_qty > 0 else 0
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Bestellt (Σ Stk)", f"{total_qty:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    c2.metric(
+        "Geliefert", f"{total_delv:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+        delta=f"{pct_delv}% erfüllt", delta_color="off",
+    )
+    c3.metric(
+        "Fakturiert", f"{total_inv:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+        delta=f"{pct_inv}% berechnet", delta_color="off",
+    )
+
+    icon = {"open": "○", "partial": "◑", "done": "●", "—": "—"}
+    df_rows: list[dict[str, Any]] = []
+    for r in rows:
+        df_rows.append({
+            "Pos": r["pos_nr"],
+            "Artikel": r["sku"] or "—",
+            "Bezeichnung": r["title"][:60],
+            "Bestellt": r["qty"],
+            "Geliefert": r["delivered"],
+            "Offen Lieferung": r["open_delivery"],
+            "Lief.": f"{icon[r['status_delivery']]} {r['status_delivery']}",
+            "Fakturiert": r["invoiced"],
+            "Offen Rechn.": r["open_invoice"],
+            "Rechn.": f"{icon[r['status_invoice']]} {r['status_invoice']}",
+        })
+
+    df = pd.DataFrame(df_rows)
+    st.dataframe(
+        df, hide_index=True, use_container_width=True,
+        column_config={
+            "Pos": st.column_config.NumberColumn(width="small", format="%d"),
+            "Bestellt":   st.column_config.NumberColumn(format="%.2f", width="small"),
+            "Geliefert":  st.column_config.NumberColumn(format="%.2f", width="small"),
+            "Offen Lieferung": st.column_config.NumberColumn(format="%.2f", width="small"),
+            "Fakturiert": st.column_config.NumberColumn(format="%.2f", width="small"),
+            "Offen Rechn.": st.column_config.NumberColumn(format="%.2f", width="small"),
+        },
+    )
+
+    has_open_delv = any(r["open_delivery"] > 0 for r in rows)
+    has_open_inv = any(r["open_invoice"] > 0 for r in rows)
+    if not has_open_delv and not has_open_inv:
+        st.success("✅ Alles ausgeliefert und fakturiert.")
+    elif has_open_delv and has_open_inv:
+        st.caption(
+            "ℹ️ Restmengen offen. **Lieferungen** anlegen über _Lieferungen_-Sektion. "
+            "**Rechnung** über _Rechnung erstellen_-Button — liefert nur die Rest-fakturierten Mengen."
+        )
 
 
 def _render_pdf_section(order: dict[str, Any]) -> None:
