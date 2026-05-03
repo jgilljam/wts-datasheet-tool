@@ -711,6 +711,22 @@ def _render_pdf_section(inv: dict[str, Any]) -> None:
         st.session_state[f"inv_pdf_{inv['id']}"] = pdf_bytes
         st.success(f"PDF generiert ({len(pdf_bytes) // 1024} KB).")
 
+    if c1.button(
+        "📋 Proforma-PDF",
+        key=f"gen_proforma_pdf_{inv['id']}",
+        use_container_width=True,
+        disabled=not has_items,
+        help="Vorab-Information für Zoll/Anfrage — keine Zahlungsaufforderung.",
+    ):
+        try:
+            from lib.beleg_generator import render_proforma_pdf
+            pdf_bytes = render_proforma_pdf(inv, items)
+        except Exception as exc:
+            st.error(f"Proforma-PDF fehlgeschlagen: {exc}")
+            return
+        st.session_state[f"inv_pdf_{inv['id']}"] = pdf_bytes
+        st.success(f"Proforma-PDF generiert ({len(pdf_bytes) // 1024} KB).")
+
     pdf_bytes = st.session_state.get(f"inv_pdf_{inv['id']}")
     if pdf_bytes:
         nr = inv.get("invoice_number") or "Rechnung_Entwurf"

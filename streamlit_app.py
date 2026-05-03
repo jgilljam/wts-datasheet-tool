@@ -16,6 +16,7 @@ from features import (
     dashboard,
     datasheet,
     deliveries,
+    dunning,
     invoices,
     orders,
     parties,
@@ -72,6 +73,12 @@ pages_map = {
         title="Rechnungen",
         icon="📄",
         url_path="rechnungen",
+    ),
+    "dunning": st.Page(
+        dunning.render,
+        title="OP-Liste",
+        icon="💼",
+        url_path="op-liste",
     ),
     "stock": st.Page(
         stock.render,

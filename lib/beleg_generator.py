@@ -400,6 +400,212 @@ def render_auftragsbestaetigung_pdf(order: dict[str, Any], items: list[dict[str,
 #  Rechnung (Verkaufs-Rechnung an Kunden) + Storno-Variante
 # =====================================================================
 
+def render_mahnung_pdf(
+    invoice: dict[str, Any],
+    items: list[dict[str, Any]],
+    dunning: dict[str, Any],
+) -> bytes:
+    """Rendert eine Mahnung als PDF.
+
+    Args:
+        invoice: aus get_invoice
+        items: aus list_invoice_items (für Item-Liste)
+        dunning: aus invoice_dunnings — Level/Gebühr/Zinsen/Frist
+    """
+    from features.invoices import repo as inv_repo
+    from features.dunning.constants import DUNNING_LABELS_DE
+
+    customer = invoice.get("customer") or {}
+    shipping_addr = invoice.get("shipping_address") or invoice.get("billing_address")
+    billing_addr = invoice.get("billing_address") or shipping_addr
+
+    company = inv_repo.get_company_settings()
+    built = _build_items(items)
+
+    level = int(dunning.get("level", 1))
+    label = DUNNING_LABELS_DE.get(level, f"Mahnung Stufe {level}")
+    amount = int(dunning.get("amount_due_cents") or 0)
+    fees = int(dunning.get("fees_cents") or 0)
+    interest = int(dunning.get("interest_cents") or 0)
+    total = amount + fees + interest
+
+    new_due = dunning.get("due_date")
+    if new_due and isinstance(new_due, str):
+        new_due_str = _format_date(new_due)
+    else:
+        new_due_str = _format_date(new_due) if new_due else ""
+
+    # Body-Texte je nach Stufe
+    if level == 1:
+        body = (
+            f"Wir möchten Sie freundlich darauf hinweisen, dass die untenstehende Rechnung "
+            f"{invoice.get('invoice_number')} vom {_format_date(invoice.get('issued_at'))} "
+            f"noch nicht beglichen wurde. Bitte begleichen Sie den offenen Betrag bis zum {new_due_str}."
+        )
+    elif level == 2:
+        body = (
+            f"Trotz unserer Zahlungserinnerung ist die Rechnung {invoice.get('invoice_number')} "
+            f"vom {_format_date(invoice.get('issued_at'))} bis heute nicht beglichen. "
+            f"Wir mahnen daher den offenen Betrag und bitten um Zahlung bis zum {new_due_str}. "
+            f"Hierfür berechnen wir Mahngebühren und Verzugszinsen gemäß §288 BGB."
+        )
+    else:
+        body = (
+            f"Trotz unserer Mahnungen ist die Rechnung {invoice.get('invoice_number')} "
+            f"vom {_format_date(invoice.get('issued_at'))} weiterhin offen. Dies ist unsere "
+            f"letzte Mahnung. Sollte der offene Betrag nicht bis zum {new_due_str} eingehen, "
+            f"behalten wir uns die Übergabe an unser Inkasso-Unternehmen sowie das gerichtliche "
+            f"Mahnverfahren vor."
+        )
+
+    # Mahn-spezifischer Footer-Hint kombiniert Body + Hinweis
+    hint = f"{body} Bitte überweisen Sie den Gesamtbetrag unter Angabe der Mahn-/Rechnungsnummer."
+
+    storno_banner = f"{label.upper()} — Rechnung {invoice.get('invoice_number')}"
+
+    # Spezielle Totals-Tabelle für Mahnung
+    totals_override = {
+        "net_total_eur": "",
+        "tax_total_eur": "",
+        "gross_total_eur": _eur(total),
+        "discount_total_eur": "",
+        "tax_rate_summary": "",
+        "tax_breakdown": [],
+    }
+
+    context = {
+        "logo_uri": _logo_uri(),
+        "doc_label": label,
+        "doc_number": invoice.get("invoice_number") or "—",
+        "doc_number_label": "Bezug Rechnung",
+        "today": date.today().strftime("%d.%m.%Y"),
+        "doc_date": date.today().strftime("%d.%m.%Y"),
+        "doc_date_label": "Mahnungsdatum",
+        "due_date": new_due_str,
+        "due_date_label": "Zahlung bis",
+        "due_date_warn": True,
+        "service_date": "",
+        "service_date_label": "",
+        "reference": invoice.get("customer_reference"),
+        "reference_label": "Ihre Best.-Nr.",
+        "related_order_number": "",
+        "customer_number": customer.get("customer_number") or "",
+        "recipient_label_billing": "Rechnungsadresse",
+        "recipient_label_shipping": "Lieferadresse",
+        "shipping_party_name": customer.get("legal_name"),
+        "price_label": "Einzelpreis €",
+        "total_label": "Gesamtforderung",
+        "currency_label": "EUR",
+        "d": invoice,
+        "party": customer,
+        "shipping_addr": shipping_addr,
+        "billing_addr": billing_addr,
+        "storno_banner": storno_banner,
+        "dropship_note": "",
+        "reverse_charge": False,
+        "items": built,
+        "master_label_1": "Hauptforderung",
+        "master_value_1": _eur(amount),
+        "master_label_2": "Mahngebühr",
+        "master_value_2": _eur(fees) if fees else "—",
+        "master_label_3": "Verzugszinsen",
+        "master_value_3": _eur(interest) if interest else "—",
+        "master_label_4": "Gesamt",
+        "master_value_4": _eur(total),
+        "customs_lines": [],
+        "footer_help": "Rückfragen zu dieser Mahnung an:",
+        "footer_hint": hint,
+        "bank_lines": _build_bank_lines(company),
+        "open_balance_eur": _eur(total),
+        "company": company,
+        **totals_override,
+    }
+    return _render(context)
+
+
+def render_proforma_pdf(invoice: dict[str, Any], items: list[dict[str, Any]]) -> bytes:
+    """Rendert eine Proforma-Rechnung als PDF.
+
+    Wird typischerweise vor Rechnungsstellung verwendet (Zoll, Vorabinfo).
+    Trägt explizit den Hinweis "keine Zahlungsaufforderung" und nutzt
+    KEINE finale Rechnungsnummer (zeigt 'PROFORMA' wenn keine Nr. da).
+    """
+    from features.invoices import repo as inv_repo
+
+    customer = invoice.get("customer") or {}
+    shipping_addr = invoice.get("shipping_address") or invoice.get("billing_address")
+    billing_addr = invoice.get("billing_address") or shipping_addr
+    rev_charge = bool(invoice.get("is_reverse_charge"))
+    related_order = invoice.get("related_order") or {}
+
+    company = inv_repo.get_company_settings()
+    built = _build_items(items)
+    totals = _build_totals(items, invoice)
+
+    hint_parts = [
+        "Diese Proforma-Rechnung dient ausschließlich der Vorabinformation "
+        "(z.B. für Zollzwecke, Anfrage, Akkreditiv) und stellt KEINE "
+        "Zahlungsaufforderung im Sinne des UStG dar.",
+    ]
+    if rev_charge:
+        hint_parts.append(
+            "Steuerschuldnerschaft des Leistungsempfängers (Reverse-Charge nach §13b UStG)."
+        )
+    if invoice.get("incoterms"):
+        place = f" {invoice.get('incoterms_place')}" if invoice.get("incoterms_place") else ""
+        hint_parts.append(f"Lieferung gemäß Incoterms 2020 {invoice['incoterms']}{place}.")
+
+    context = {
+        "logo_uri": _logo_uri(),
+        "doc_label": "Proforma-Rechnung",
+        "doc_number": invoice.get("invoice_number") or "PROFORMA",
+        "doc_number_label": "Proforma-Nr.",
+        "today": date.today().strftime("%d.%m.%Y"),
+        "doc_date": _format_date(invoice.get("issued_at")) or date.today().strftime("%d.%m.%Y"),
+        "doc_date_label": "Datum",
+        "due_date": "",
+        "due_date_label": "",
+        "due_date_warn": False,
+        "service_date": _format_date(invoice.get("service_date")),
+        "service_date_label": "Leistungsdatum",
+        "reference": invoice.get("customer_reference"),
+        "reference_label": "Ihre Best.-Nr.",
+        "related_order_number": related_order.get("order_number") or "",
+        "customer_number": customer.get("customer_number") or "",
+        "recipient_label_billing": "Rechnungsadresse",
+        "recipient_label_shipping": "Lieferadresse",
+        "shipping_party_name": invoice.get("shipping_party_name") or customer.get("legal_name"),
+        "price_label": "Einzelpreis €",
+        "total_label": "Proforma-Wert",
+        "currency_label": "EUR",
+        "d": invoice,
+        "party": customer,
+        "shipping_addr": shipping_addr,
+        "billing_addr": billing_addr,
+        "storno_banner": "PROFORMA-RECHNUNG — keine Zahlungsaufforderung. "
+                         "Dient nur der Vorabinformation (Zoll/Anfrage).",
+        "dropship_note": "",
+        "reverse_charge": rev_charge,
+        "items": built,
+        "master_label_1": "Ihre Best.-Nr.",
+        "master_value_1": invoice.get("customer_reference") or "",
+        "master_label_2": "Versand",
+        "master_value_2": _shipping_label(invoice),
+        "master_label_3": "Zahlungsziel",
+        "master_value_3": _payment_terms_label(invoice),
+        "master_label_4": "USt-Modus",
+        "master_value_4": _ust_mode_label(rev_charge, items),
+        "customs_lines": _customs_lines_from_breakdown(totals["tax_breakdown"]),
+        "footer_help": "Rückfragen zur Proforma-Rechnung an:",
+        "footer_hint": " ".join(hint_parts) or None,
+        "bank_lines": [],   # Keine Bank-Verbindung — keine Zahlungsaufforderung
+        "open_balance_eur": "",
+        "company": company,
+        **{k: v for k, v in totals.items() if not k.startswith("_")},
+    }
+    return _render(context)
+
+
 def render_rechnung_pdf(invoice: dict[str, Any], items: list[dict[str, Any]]) -> bytes:
     """Rendert eine Rechnung als PDF."""
     from features.invoices import repo as inv_repo  # lazy import wg. cycle
