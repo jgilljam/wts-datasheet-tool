@@ -108,6 +108,16 @@ def classify_and_extract(mail_id: str) -> dict[str, Any]:
             pdf_bytes_list=pdf_bytes_list,
         )
 
+        # Primärer Anhang (bei mehreren PDFs nur den echten Beleg verwenden,
+        # nicht AGB/Spec/Datenblatt)
+        primary_idx = cls.primary_attachment_index
+        primary_pdf: bytes | None = None
+        if pdf_bytes_list:
+            if 0 <= primary_idx < len(pdf_bytes_list):
+                primary_pdf = pdf_bytes_list[primary_idx]
+            else:
+                primary_pdf = pdf_bytes_list[0]
+
         update: dict[str, Any] = {
             "ai_category": cls.category,
             "ai_confidence": cls.confidence,
@@ -119,6 +129,7 @@ def classify_and_extract(mail_id: str) -> dict[str, Any]:
                     "category": cls.category,
                     "confidence": cls.confidence,
                     "reason": cls.reason,
+                    "primary_attachment_index": primary_idx,
                 },
             },
         }
@@ -130,18 +141,30 @@ def classify_and_extract(mail_id: str) -> dict[str, Any]:
                     from_email=mail.get("from_email") or "",
                     subject=mail.get("subject") or "",
                     body_text=mail.get("body_text") or "",
-                    pdf_bytes_list=pdf_bytes_list,
+                    pdf_bytes_list=[primary_pdf] if primary_pdf else [],
                 )
-                update["ai_extracted_payload"]["sales_order"] = so.model_dump()
+                so_dict = so.model_dump()
+                update["ai_extracted_payload"]["sales_order"] = so_dict
+                # Item-Validation
+                try:
+                    warnings = validate_sales_order_items(so_dict)
+                    if warnings:
+                        update["ai_extracted_payload"]["validation_warnings"] = warnings
+                        # Bei kritischen Warnings Confidence dämpfen
+                        if any(w["type"] == "price_mismatch" for w in warnings):
+                            if cls.confidence == "high":
+                                update["ai_confidence"] = "medium"
+                except Exception:
+                    pass
             except Exception as e:
                 update["ai_error"] = f"Sales-Order-Extract: {e}"[:500]
 
         elif cls.category == "incoming_invoice":
-            if pdf_bytes_list:
+            if primary_pdf:
                 try:
                     from .incoming_invoice_ocr import parse_invoice_pdf
                     parsed = parse_invoice_pdf(
-                        pdf_bytes_list[0], api_key=api_key, model=model,
+                        primary_pdf, api_key=api_key, model=model,
                     )
                     update["ai_extracted_payload"]["incoming_invoice"] = parsed.model_dump()
                 except Exception as e:
@@ -166,6 +189,57 @@ def _set_failure(mail_id: str, msg: str) -> dict[str, Any]:
 # ============================================================
 # Stufe 2: Auto-Convert
 # ============================================================
+
+# ============================================================
+# Validation — Item-Plausibilität gegen Artikelstamm
+# ============================================================
+
+PRICE_DEVIATION_WARN_PCT = 20.0  # ab dieser Abweichung in % wird gewarnt
+
+
+def validate_sales_order_items(so_dict: dict[str, Any]) -> list[dict[str, Any]]:
+    """Prüft jedes Item: SKU im Artikelstamm? Preis nahe default_price_cents?
+
+    Returns: liste mit warnings, jede {pos_nr, type, msg, ...}
+    """
+    warnings: list[dict[str, Any]] = []
+    sb = supabase()
+    for item in so_dict.get("items") or []:
+        sku = (item.get("sku") or "").strip()
+        pos_nr = item.get("pos_nr")
+        if not sku:
+            continue
+        article = (
+            sb.table("articles")
+            .select("id, sku, title_de, default_price_cents")
+            .ilike("sku", sku).limit(1).execute().data
+        )
+        if not article:
+            warnings.append({
+                "pos_nr": pos_nr,
+                "type": "no_article_match",
+                "msg": f"SKU {sku!r} ist nicht im Artikelstamm — wird als freie Position angelegt.",
+            })
+            continue
+        a = article[0]
+        target_eur = float(item.get("target_price_eur") or 0)
+        default_eur = (a.get("default_price_cents") or 0) / 100
+        if target_eur > 0 and default_eur > 0:
+            diff_pct = abs(target_eur - default_eur) / default_eur * 100
+            if diff_pct > PRICE_DEVIATION_WARN_PCT:
+                warnings.append({
+                    "pos_nr": pos_nr,
+                    "type": "price_mismatch",
+                    "msg": (
+                        f"Pos {pos_nr}: Preis {target_eur:.2f} € weicht {diff_pct:.0f}% "
+                        f"vom Listenpreis {default_eur:.2f} € ab."
+                    ),
+                    "target_eur": target_eur,
+                    "default_eur": default_eur,
+                    "diff_pct": round(diff_pct, 1),
+                })
+    return warnings
+
 
 _CONFIDENCE_RANK = {"low": 0, "medium": 1, "high": 2}
 

@@ -165,6 +165,16 @@ def _create_party(
     return party_id
 
 
+def _normalize_addr_part(s: str | None) -> str:
+    """Normalisiert Adress-Teile für Duplikatscheck (Schreibweisen-Toleranz)."""
+    if not s:
+        return ""
+    out = s.lower().strip().replace("ß", "ss")
+    for ch in (".", ","):
+        out = out.replace(ch, "")
+    return " ".join(out.split())
+
+
 def _upsert_address(
     *,
     party_id: str,
@@ -179,23 +189,30 @@ def _upsert_address(
 ) -> str | None:
     """Legt eine Adresse an, falls Street+City+Zip+Kind noch nicht existiert.
 
-    Returns address_id oder None bei Fehler.
+    Match-Logik mit Normalisierung (case-insensitive, ß→ss, Punkte/Whitespace
+    ignoriert) — verhindert Duplikate wie „Musterstr. 5" vs „Musterstraße 5".
     """
     if not street or not city:
         return None
     sb = supabase()
-    # Duplikatscheck
-    existing = (
+    target_street = _normalize_addr_part(street)
+    target_city = _normalize_addr_part(city)
+    target_zip = _normalize_addr_part(zip_code)
+
+    existing_addrs = (
         sb.table("addresses")
-        .select("id")
+        .select("id, street, city, zip")
         .eq("party_id", party_id)
         .eq("kind", kind)
-        .ilike("street", street)
-        .ilike("city", city)
-        .limit(1).execute().data
-    )
-    if existing:
-        return existing[0]["id"]
+        .execute().data
+    ) or []
+    for a in existing_addrs:
+        if (
+            _normalize_addr_part(a.get("street")) == target_street
+            and _normalize_addr_part(a.get("city")) == target_city
+            and (not target_zip or _normalize_addr_part(a.get("zip")) == target_zip)
+        ):
+            return a["id"]
     payload: dict[str, Any] = {
         "party_id": party_id,
         "kind": kind,

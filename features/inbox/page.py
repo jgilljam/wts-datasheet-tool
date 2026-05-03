@@ -468,8 +468,29 @@ def _render_detail(mail_id: str) -> None:
         # KI-Ergebnis + Convert
         if mail_row.get("ai_extracted_payload"):
             st.markdown("#### 🤖 KI-Extraktion")
+
+            # Konfidenz-Banner
+            conf = mail_row.get("ai_confidence") or ""
+            if conf == "low":
+                st.error("⚠️ KI-Konfidenz **niedrig** — bitte alle Felder vor dem Anlegen prüfen.")
+            elif conf == "medium":
+                st.warning("⚠️ KI-Konfidenz **mittel** — empfohlen: Items + Preise checken.")
+
+            # Validation-Warnings
+            payload = mail_row.get("ai_extracted_payload") or {}
+            warnings = payload.get("validation_warnings") or []
+            if warnings:
+                with st.expander(f"⚠️ {len(warnings)} Plausibilitäts-Warnung(en)", expanded=True):
+                    for w in warnings:
+                        msg = w.get("msg") or w.get("type") or "?"
+                        if w.get("type") == "price_mismatch":
+                            st.warning(f"💰 {msg}")
+                        else:
+                            st.info(f"ℹ️ {msg}")
+
             with st.expander("Roh-JSON", expanded=False):
-                st.json(mail_row["ai_extracted_payload"])
+                st.json(payload)
+
             if mail_row.get("linked_beleg_id"):
                 bt = mail_row.get("linked_beleg_type")
                 bid = mail_row["linked_beleg_id"][:8]

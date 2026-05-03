@@ -40,6 +40,14 @@ class MailClassification(BaseModel):
         default="",
         description="Kurze Begründung (1-2 Sätze) was auf die Kategorie hinweist",
     )
+    primary_attachment_index: int = Field(
+        default=-1,
+        description=(
+            "Index (0-basiert) des wichtigsten Anhangs, der die eigentliche Bestellung/"
+            "Rechnung/AB enthält. -1 wenn unklar oder nicht in Anhängen. "
+            "Beispiel: bei 3 PDFs (Bestellung, AGB, technische Spec) → Index 0 für die Bestellung."
+        ),
+    )
 
 
 # ============================================================
@@ -125,7 +133,15 @@ Routing-Hinweis: An sales@wts-trading.de gesendete Mails sind meistens sales_ord
 An invoice@wts-trading.de sind meistens incoming_invoice. Verifiziere aber anhand
 des Inhalts — manchmal landen Mails in der falschen Inbox.
 
-Liefere strukturiertes JSON mit category, confidence, reason.
+WENN MEHRERE PDF-ANHÄNGE: bestimme welcher der „primäre" Anhang ist —
+also der mit der echten Bestellung/Rechnung/AB. Andere PDFs sind oft
+AGB, technische Spezifikationen, Datenblätter, Anhänge. Setze
+primary_attachment_index entsprechend (0-basiert, -1 wenn unklar).
+
+Beispiel: 3 Anhänge in Reihenfolge ['AGB.pdf', 'PO_4500.pdf', 'Spec_WS200.pdf']
+→ primary_attachment_index = 1.
+
+Liefere strukturiertes JSON mit category, confidence, reason, primary_attachment_index.
 """
 
 

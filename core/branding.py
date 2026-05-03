@@ -26,6 +26,17 @@ def apply_branding() -> None:
     st.markdown(
         f"""
         <style>
+          /* Inter Variable als Body-Font + JetBrains Mono für Code/Specs.
+             Bunny Fonts (GDPR-konform, kein Google-Tracking). */
+          @import url('https://fonts.bunny.net/css?family=inter:400,500,600,700|jetbrains-mono:400,500&display=swap');
+
+          html, body, [class*="css"], [class*="st-"], button, input, textarea, select {{
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif !important;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            font-feature-settings: 'cv11', 'ss01', 'ss03';
+          }}
+
           /* Wide-Layout mit selbstgesetztem Max-Width für ruhige Lesbarkeit */
           .block-container {{
             padding-top: 1.75rem;
@@ -33,9 +44,32 @@ def apply_branding() -> None:
             max-width: 1240px;
           }}
           h1, h2, h3 {{ letter-spacing: -0.02em; color: {PRIMARY}; }}
-          h1 {{ font-weight: 700; }}
-          h2 {{ font-weight: 650; }}
+          h1 {{ font-weight: 700; letter-spacing: -0.03em; }}
+          h2 {{ font-weight: 650; letter-spacing: -0.025em; }}
           h3 {{ font-weight: 600; }}
+
+          /* Sidebar — Group-Header-Style + smoothere Selection */
+          [data-testid="stSidebarNavLink"] {{
+            border-radius: 8px !important;
+            transition: background .12s ease, padding-left .12s ease;
+          }}
+          [data-testid="stSidebarNavLink"]:hover {{
+            padding-left: 14px !important;
+          }}
+          [data-testid="stSidebarNavSeparator"] {{
+            margin: 14px 0 6px 0 !important;
+          }}
+          /* Sidebar-Section-Heading via aria-label */
+          .wts-sidebar-section {{
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
+            font-size: 0.62rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: {TEXT_SECONDARY};
+            font-weight: 500;
+            padding: 14px 0 4px 4px;
+            margin-top: 8px;
+          }}
 
           .wts-eyebrow {{
             font-family: ui-monospace, "JetBrains Mono", monospace;
