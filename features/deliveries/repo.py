@@ -8,6 +8,7 @@ from typing import Any
 import streamlit as st
 
 from core.db import supabase
+from core.snapshots import apply_snapshot_to_items, apply_snapshot_view
 
 
 # ---------- Lieferungen ----------
@@ -75,11 +76,13 @@ def get_delivery(delivery_id: str) -> dict[str, Any] | None:
         .maybe_single()
         .execute()
     )
-    return res.data if res else None
+    if not res or not res.data:
+        return None
+    return apply_snapshot_view(res.data, party_field="parties")
 
 
 def list_delivery_items(delivery_id: str) -> list[dict[str, Any]]:
-    return (
+    items = (
         supabase()
         .table("delivery_items")
         .select(
@@ -91,7 +94,13 @@ def list_delivery_items(delivery_id: str) -> list[dict[str, Any]]:
         .order("pos_nr")
         .execute()
         .data
+    ) or []
+    parent = (
+        supabase().table("deliveries").select("locked_at").eq("id", delivery_id)
+        .maybe_single().execute()
     )
+    is_frozen = bool(parent and parent.data and parent.data.get("locked_at"))
+    return apply_snapshot_to_items(items, is_frozen=is_frozen)
 
 
 def list_delivery_documents(delivery_id: str) -> list[dict[str, Any]]:

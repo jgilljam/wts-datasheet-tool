@@ -9,6 +9,10 @@ from typing import Any
 import streamlit as st
 
 from core.db import supabase
+from core.snapshots import (
+    build_delivery_snapshot_payload,
+    enrich_items_with_snapshots,
+)
 
 from . import repo
 
@@ -320,9 +324,23 @@ def _book_stock_for_delivery(delivery_id: str, movement_type: str) -> int:
 
 
 def lock_delivery(delivery_id: str) -> None:
-    """GoBD: nach Finalisierung append-only — keine Updates mehr."""
+    """GoBD: nach Finalisierung append-only + Stammdaten-Snapshots atomar."""
+    cur = (
+        supabase()
+        .table("deliveries")
+        .select("party_id, source_party_id, shipping_address_id")
+        .eq("id", delivery_id)
+        .single()
+        .execute()
+    )
+    snapshots = build_delivery_snapshot_payload(
+        party_id=cur.data.get("party_id"),
+        source_party_id=cur.data.get("source_party_id"),
+        shipping_address_id=cur.data.get("shipping_address_id"),
+    )
     supabase().table("deliveries").update({
         "locked_at": datetime.utcnow().isoformat() + "Z",
+        **snapshots,
     }).eq("id", delivery_id).execute()
     _log_event(delivery_id, "locked", {})
 
@@ -347,6 +365,8 @@ def replace_items(delivery_id: str, items: list[dict[str, Any]]) -> None:
         clean = {k: _ser(v) for k, v in raw.items() if v is not None and v != ""}
         clean["pos_nr"] = clean.get("pos_nr") or i
         rows.append(clean)
+
+    rows = enrich_items_with_snapshots(rows)
 
     supabase().rpc("replace_delivery_items", {
         "p_delivery_id": delivery_id,

@@ -21,7 +21,8 @@ from .db import supabase
 
 
 def actor_label() -> str:
-    """Wer ist gerade angemeldet? Bis Google-OIDC nur App-Passwort → 'Mitarbeiter'."""
+    """Wer ist gerade angemeldet? Email aus core.auth-Session,
+    Fallback 'Mitarbeiter' für Hintergrund-Jobs ohne Session."""
     return st.session_state.get("user_email") or "Mitarbeiter"
 
 

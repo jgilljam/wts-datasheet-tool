@@ -1,11 +1,6 @@
-# WTS Datenblatt-Tool (Web-UI)
+# WTS-Tool
 
-Browser-Tool für Mitarbeiter: Hersteller-PDF reinziehen → Komponenten-JSON + WTS-gebrandete Datenblätter (DE/EN) zum Download.
-
-Drei Tools auf einer Seite gebündelt:
-1. PDF-Text-Extraktion (pypdf)
-2. KI-Normalisierung (Gemini + Leitplanken-Check)
-3. PDF-Erzeugung im WTS-Branding (WeasyPrint)
+Browser-basiertes ERP/Mitarbeiter-Tool für WTS Trading & Service: Datenblätter, Aufträge, Lieferungen, Lager, Rechnungen, Mahnungen, Eingangsrechnungen, Angebote, Bestellungen.
 
 ## Lokal ausführen
 
@@ -21,9 +16,12 @@ pip install -r requirements.txt
 Secrets liegen lokal in `.streamlit/secrets.toml` (nicht im Git, siehe `.gitignore`):
 
 ```toml
-APP_PASSWORD = "wts-2026"
 GEMINI_API_KEY = "AIzaSy..."
 GEMINI_MODEL = "gemini-2.5-flash-lite"
+SUPABASE_URL = "https://<projekt>.supabase.co"
+SUPABASE_SECRET_KEY = "..."
+SUPABASE_PAT = "..."         # nur lokal — für Migrations
+SUPABASE_PROJECT_REF = "..." # nur lokal — für Migrations
 ```
 
 Starten:
@@ -34,21 +32,31 @@ DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib streamlit run streamlit_app.py
 
 Browser öffnet sich automatisch auf `http://localhost:8501`.
 
-## Online-Deployment (Streamlit Community Cloud, kostenlos)
+## Erst-Einrichtung (beim ersten Start)
 
-1. **GitHub-Repo anlegen** und diesen Ordner pushen (ohne `.streamlit/secrets.toml`!).
-2. Auf https://share.streamlit.io anmelden mit demselben GitHub-Account.
-3. **Neue App** anlegen, Repo auswählen, Hauptdatei `streamlit_app.py`.
-4. Im App-Settings unter „Secrets" denselben Inhalt wie in der lokalen `secrets.toml` einfügen.
-5. Deploy → Link bekommt jeder Mitarbeiter, einloggen mit dem `APP_PASSWORD`.
+1. App starten — beim ersten Aufruf erscheint der Erst-Einrichtungs-Wizard
+2. Email + Name + Passwort (≥8 Zeichen) eingeben → erster Admin-Account wird angelegt
+3. Einloggen → in „Mitarbeiter" → „Mein Account" 2FA aktivieren (empfohlen)
+4. Über „Mitarbeiter" → „Neuen Mitarbeiter anlegen" weitere Accounts hinzufügen
 
-`packages.txt` enthält die System-Pakete (Pango etc.), die Streamlit Cloud automatisch via apt installiert.
+## Online-Deployment (Streamlit Community Cloud)
+
+1. **GitHub-Repo** committen + pushen (ohne `.streamlit/secrets.toml`!)
+2. Auf https://share.streamlit.io anmelden, neue App, Repo auswählen, Hauptdatei `streamlit_app.py`
+3. Im App-Settings unter „Secrets" eintragen: `GEMINI_*`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`. **NICHT** in Cloud: `SUPABASE_PAT` (nur lokal für Migrations).
+4. Deploy → Link an Mitarbeiter — beim ersten Klick führt der Erst-Einrichtungs-Wizard durch
+
+`packages.txt` enthält die System-Pakete (Pango etc.), die Streamlit Cloud via apt installiert.
 
 ## Sicherheit
 
-- Single-Password-Login. Für mehr Komfort später: SSO (Google) via `streamlit-authenticator`.
-- Secrets nur in Streamlit-Settings, nie im Code.
-- Free-Tier-Limit von Gemini: 1000 Calls/Tag bei `flash-lite`. Reicht für ein paar Mitarbeiter; bei Engpass Billing aktivieren.
+- **Multi-User-Auth:** bcrypt-gehashte Passwörter, optional TOTP-2FA (Google/Microsoft Authenticator)
+- **Failed-Login-Lockout:** 5 Fehlversuche → 15 min Sperre
+- **Session-Timeout:** 60 min Inaktivität → Auto-Logout
+- **Append-only Audit-Log:** alle Login-Versuche + alle Beleg-Mutationen
+- **GoBD-konforme Belegführung:** atomare lückenlose Nummern, eingefrorene Stammdaten-Snapshots, byte-stable PDF-Archiv mit SHA-256-Hash, Items-Lock-Trigger
+- **Rollen:** `admin` (Mitarbeiter-Verwaltung), `mitarbeiter` (voller Beleg-Zugriff), `viewer` (read-only — vorbereitet, noch nicht enforced)
+- Secrets nur in Streamlit-Settings, nie im Code
 
 ## Was die App NICHT macht
 

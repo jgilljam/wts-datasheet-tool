@@ -12,12 +12,18 @@ Pfad-Schema im Bucket:
 
 from __future__ import annotations
 
+import hashlib
 import re
 from typing import Callable
 
 from core.db import supabase
 
 BUCKET = "belege"
+
+
+def sha256_hex(data: bytes) -> str:
+    """SHA-256-Hex-Digest der PDF-Bytes — Manipulations-Indikator (GoBD P10)."""
+    return hashlib.sha256(data).hexdigest()
 
 
 # ---------- Pfad-Helper ----------
@@ -114,10 +120,12 @@ def render_or_fetch(
         # Persist-Fehler nicht durchreichen — User soll trotzdem Download bekommen
         return pdf_bytes, None
 
+    pdf_hash = sha256_hex(pdf_bytes)
     try:
-        supabase().table(table).update({"pdf_storage_path": path}).eq(
-            "id", doc["id"]
-        ).execute()
+        supabase().table(table).update({
+            "pdf_storage_path": path,
+            "pdf_hash_sha256": pdf_hash,
+        }).eq("id", doc["id"]).execute()
     except Exception:
         # DB-Update fehlgeschlagen, aber Storage-Upload war ok — beim
         # nächsten Aufruf wird re-uploaded (kein dauerhafter Schaden)
@@ -146,10 +154,12 @@ def persist_after_lock(
         upload_pdf(path, pdf_bytes, upsert=True)
     except Exception:
         return None
+    pdf_hash = sha256_hex(pdf_bytes)
     try:
-        supabase().table(table).update({"pdf_storage_path": path}).eq(
-            "id", doc_id
-        ).execute()
+        supabase().table(table).update({
+            "pdf_storage_path": path,
+            "pdf_hash_sha256": pdf_hash,
+        }).eq("id", doc_id).execute()
     except Exception:
         return None
     return path

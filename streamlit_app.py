@@ -25,6 +25,7 @@ from features import (
     quotations,
     settings,
     stock,
+    users,
 )
 
 
@@ -111,6 +112,12 @@ pages_map = {
         title="Datenblatt",
         icon="📋",
         url_path="datenblatt",
+    ),
+    "users": st.Page(
+        users.render,
+        title="Mitarbeiter",
+        icon="👤",
+        url_path="mitarbeiter",
     ),
     "settings": st.Page(
         settings.render,

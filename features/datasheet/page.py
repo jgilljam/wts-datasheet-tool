@@ -4,6 +4,7 @@ Eingangsfunktion: render() — wird vom App-Entry oder als Page in st.navigation
 """
 
 import base64
+import html
 import io
 import json
 import re
@@ -257,15 +258,26 @@ def render() -> None:
                     with st.container():
                         has_pdf = bool(t.datenblatt_url and t.datenblatt_url.lower().startswith(("http://", "https://")))
                         badge = "📄 mit Datenblatt-PDF" if has_pdf else "ℹ️ Beschreibung (kein direktes PDF)"
+                        # GoBD/Security: Web-Scraping-Daten (Hersteller-Site → KI → hier)
+                        # können HTML/JS enthalten → escapen vor Render. Quelle-URL nur
+                        # zulassen wenn http(s), sonst weglassen (javascript:-Schema-Schutz).
+                        safe_hersteller = html.escape(t.hersteller or "")
+                        safe_modell = html.escape(t.modell or "")
+                        safe_desc = html.escape(t.kurzbeschreibung or "")
+                        quelle_ok = bool(
+                            t.quelle_url and t.quelle_url.lower().startswith(("http://", "https://"))
+                        )
+                        quelle_html = (
+                            f'<div style="font-size: 0.78rem;"><a href="{html.escape(t.quelle_url)}" target="_blank" rel="noopener noreferrer">↗ Quelle</a></div>'
+                            if quelle_ok else ""
+                        )
                         st.markdown(
                             f"""
                             <div class="wts-card">
                               <div class="wts-eyebrow">{badge}</div>
-                              <h3 style="margin: 6px 0 4px 0;">{t.hersteller} — {t.modell}</h3>
-                              <div style="color: {TEXT_SECONDARY}; margin-bottom: 8px;">{t.kurzbeschreibung}</div>
-                              <div style="font-size: 0.78rem;">
-                                <a href="{t.quelle_url}" target="_blank">↗ Quelle</a>
-                              </div>
+                              <h3 style="margin: 6px 0 4px 0;">{safe_hersteller} — {safe_modell}</h3>
+                              <div style="color: {TEXT_SECONDARY}; margin-bottom: 8px;">{safe_desc}</div>
+                              {quelle_html}
                             </div>
                             """,
                             unsafe_allow_html=True,

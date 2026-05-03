@@ -8,6 +8,7 @@ from typing import Any
 import streamlit as st
 
 from core.db import supabase
+from core.snapshots import apply_snapshot_to_items, apply_snapshot_view
 
 
 # ---------- Rechnungen ----------
@@ -112,11 +113,14 @@ def get_invoice(invoice_id: str) -> dict[str, Any] | None:
             .execute()
         )
         inv["reversed_by"] = ref.data if ref else None
+
+    # GoBD: bei festgeschriebenen Rechnungen Snapshot-Daten als Live-View exposen
+    apply_snapshot_view(inv, party_field="customer")
     return inv
 
 
 def list_invoice_items(invoice_id: str) -> list[dict[str, Any]]:
-    return (
+    items = (
         supabase()
         .table("invoice_items")
         .select("*, articles(id, sku, title_de, unit, default_price_cents)")
@@ -124,7 +128,18 @@ def list_invoice_items(invoice_id: str) -> list[dict[str, Any]]:
         .order("pos_nr")
         .execute()
         .data
+    ) or []
+    # Snapshot anwenden, wenn Rechnung gelockt ist
+    inv = (
+        supabase()
+        .table("invoices")
+        .select("locked_at")
+        .eq("id", invoice_id)
+        .maybe_single()
+        .execute()
     )
+    is_frozen = bool(inv and inv.data and inv.data.get("locked_at"))
+    return apply_snapshot_to_items(items, is_frozen=is_frozen)
 
 
 def list_invoice_events(invoice_id: str, limit: int = 100) -> list[dict[str, Any]]:

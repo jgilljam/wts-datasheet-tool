@@ -7,6 +7,10 @@ from typing import Any
 
 from core.audit import log_event
 from core.db import supabase
+from core.snapshots import (
+    build_invoice_snapshot_payload,
+    enrich_items_with_snapshots,
+)
 from core.utils import ser_value
 
 from . import repo
@@ -81,6 +85,29 @@ def update_status(quotation_id: str, new_status: str, comment: str | None = None
     extra: dict[str, Any] = {"status": new_status}
     if new_status == "rejected":
         extra["rejected_at"] = datetime.utcnow().isoformat() + "Z"
+
+    # GoBD-Snapshot beim ersten Versand einfrieren — Angebote sind zwar keine
+    # steuerbindenden Belege, aber für Konsistenz halten wir die Adresse stabil
+    # ab dem Moment, ab dem das Angebot beim Kunden ist.
+    if new_status == "sent" and old_status == "draft":
+        cur_full = (
+            supabase()
+            .table("quotations")
+            .select(
+                "customer_id, billing_address_id, shipping_address_id, customer_snapshot"
+            )
+            .eq("id", quotation_id)
+            .single()
+            .execute()
+        )
+        if not cur_full.data.get("customer_snapshot"):
+            snapshots = build_invoice_snapshot_payload(
+                customer_id=cur_full.data.get("customer_id"),
+                billing_address_id=cur_full.data.get("billing_address_id"),
+                shipping_address_id=cur_full.data.get("shipping_address_id"),
+            )
+            extra.update(snapshots)
+
     supabase().table("quotations").update(extra).eq("id", quotation_id).execute()
     _log(quotation_id, "status_change", {
         "old_status": old_status,
@@ -100,6 +127,8 @@ def replace_items(quotation_id: str, items: list[dict[str, Any]]) -> None:
         clean = {k: ser_value(v) for k, v in raw.items() if v is not None and v != ""}
         clean["pos_nr"] = clean.get("pos_nr") or i
         rows.append(clean)
+
+    rows = enrich_items_with_snapshots(rows)
 
     supabase().rpc("replace_quotation_items", {
         "p_quotation_id": quotation_id,

@@ -7,6 +7,10 @@ from typing import Any
 
 from core.audit import log_event
 from core.db import supabase
+from core.snapshots import (
+    build_invoice_snapshot_payload,
+    enrich_items_with_snapshots,
+)
 from core.utils import ser_value
 
 from . import repo
@@ -61,7 +65,10 @@ def issue_invoice(invoice_id: str) -> str:
     inv = (
         supabase()
         .table("invoices")
-        .select("status, issued_at, service_date")
+        .select(
+            "status, issued_at, service_date, "
+            "customer_id, billing_address_id, shipping_address_id"
+        )
         .eq("id", invoice_id)
         .single()
         .execute()
@@ -82,14 +89,30 @@ def issue_invoice(invoice_id: str) -> str:
 
     issued_at = inv.data.get("issued_at") or date.today()
     year = issued_at.year if isinstance(issued_at, date) else int(str(issued_at)[:4])
-    new_number = repo.next_invoice_number(year)
 
-    supabase().table("invoices").update({
-        "invoice_number": new_number,
-        "status": "issued",
-        "issued_at": issued_at.isoformat() if isinstance(issued_at, date) else issued_at,
-        "locked_at": datetime.utcnow().isoformat() + "Z",
-    }).eq("id", invoice_id).execute()
+    # issued_at ggf. setzen (Status-Validation passiert in der RPC nochmal)
+    if not inv.data.get("issued_at"):
+        supabase().table("invoices").update({"issued_at": issued_at.isoformat()}).eq(
+            "id", invoice_id
+        ).execute()
+
+    # GoBD-Snapshots vor der Nummernvergabe bauen
+    snapshots = build_invoice_snapshot_payload(
+        customer_id=inv.data.get("customer_id"),
+        billing_address_id=inv.data.get("billing_address_id"),
+        shipping_address_id=inv.data.get("shipping_address_id"),
+    )
+
+    # Atomar: Counter-Bump + Status-Update + Snapshot in einer DB-Transaction.
+    # Bei Fehler im Update wird der Counter-Inkrement zurückgerollt → keine Lücke.
+    new_number = supabase().rpc("issue_invoice_atomic", {
+        "p_invoice_id": invoice_id,
+        "p_year": year,
+        "p_customer_snapshot": snapshots["customer_snapshot"],
+        "p_billing_address_snapshot": snapshots["billing_address_snapshot"],
+        "p_shipping_address_snapshot": snapshots["shipping_address_snapshot"],
+        "p_company_snapshot": snapshots["company_snapshot"],
+    }).execute().data
     _log(invoice_id, "issued", {"invoice_number": new_number})
     return new_number
 
@@ -194,6 +217,7 @@ def replace_items(invoice_id: str, items: list[dict[str, Any]]) -> None:
 
     GoBD-Lock-Check passiert serverseitig (RPC liest invoices.locked_at und
     bricht ab). Bei Insert-Fehler wird der Delete automatisch zurückgerollt.
+    Items werden mit article_title/sku-Snapshots angereichert (GoBD P3).
     """
     rows: list[dict[str, Any]] = []
     for i, raw in enumerate(items or [], start=1):
@@ -202,6 +226,8 @@ def replace_items(invoice_id: str, items: list[dict[str, Any]]) -> None:
         clean = {k: ser_value(v) for k, v in raw.items() if v is not None and v != ""}
         clean["pos_nr"] = clean.get("pos_nr") or i
         rows.append(clean)
+
+    rows = enrich_items_with_snapshots(rows)
 
     supabase().rpc("replace_invoice_items", {
         "p_invoice_id": invoice_id,

@@ -6,6 +6,7 @@ from datetime import date
 from typing import Any
 
 from core.db import supabase
+from core.snapshots import apply_snapshot_to_items, apply_snapshot_view
 
 
 def list_pos(
@@ -64,11 +65,13 @@ def get_po(po_id: str) -> dict[str, Any] | None:
         .maybe_single()
         .execute()
     )
-    return res.data if res else None
+    if not res or not res.data:
+        return None
+    return apply_snapshot_view(res.data, party_field="supplier")
 
 
 def list_po_items(po_id: str) -> list[dict[str, Any]]:
-    return (
+    items = (
         supabase()
         .table("po_items")
         .select(
@@ -78,7 +81,13 @@ def list_po_items(po_id: str) -> list[dict[str, Any]]:
         .order("pos_nr")
         .execute()
         .data
+    ) or []
+    parent = (
+        supabase().table("purchase_orders").select("locked_at").eq("id", po_id)
+        .maybe_single().execute()
     )
+    is_frozen = bool(parent and parent.data and parent.data.get("locked_at"))
+    return apply_snapshot_to_items(items, is_frozen=is_frozen)
 
 
 def list_po_events(po_id: str, limit: int = 100) -> list[dict[str, Any]]:

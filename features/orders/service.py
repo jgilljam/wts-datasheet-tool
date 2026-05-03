@@ -7,6 +7,10 @@ from typing import Any
 
 from core.audit import log_event
 from core.db import supabase
+from core.snapshots import (
+    build_invoice_snapshot_payload,
+    enrich_items_with_snapshots,
+)
 from core.utils import ser_value
 
 from . import repo
@@ -77,8 +81,23 @@ def update_status(order_id: str, new_status: str, comment: str | None = None) ->
 
 
 def lock_order(order_id: str) -> None:
+    """GoBD-Festschreibung: locked_at + Stammdaten-Snapshots atomar."""
+    cur = (
+        supabase()
+        .table("orders")
+        .select("customer_id, billing_address_id, shipping_address_id")
+        .eq("id", order_id)
+        .single()
+        .execute()
+    )
+    snapshots = build_invoice_snapshot_payload(
+        customer_id=cur.data.get("customer_id"),
+        billing_address_id=cur.data.get("billing_address_id"),
+        shipping_address_id=cur.data.get("shipping_address_id"),
+    )
     supabase().table("orders").update({
         "locked_at": datetime.utcnow().isoformat() + "Z",
+        **snapshots,
     }).eq("id", order_id).execute()
     _log(order_id, "locked", {})
 
@@ -94,6 +113,8 @@ def replace_items(order_id: str, items: list[dict[str, Any]]) -> None:
         clean = {k: ser_value(v) for k, v in raw.items() if v is not None and v != ""}
         clean["pos_nr"] = clean.get("pos_nr") or i
         rows.append(clean)
+
+    rows = enrich_items_with_snapshots(rows)
 
     supabase().rpc("replace_order_items", {
         "p_order_id": order_id,
