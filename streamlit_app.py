@@ -20,6 +20,7 @@ from features import (
     inbox,
     incoming_invoices,
     invoices,
+    migration,
     orders,
     parties,
     purchase_orders,
@@ -54,6 +55,7 @@ pages_map = {
     "articles": st.Page(articles.render, title="Artikel", icon="🔧", url_path="artikel"),
     "parties": st.Page(parties.render, title="Parteien", icon="👥", url_path="parteien"),
     "datasheet": st.Page(datasheet.render, title="Datenblatt", icon="📋", url_path="datenblatt"),
+    "migration": st.Page(migration.render, title="Migration", icon="🔄", url_path="migration"),
     "users": st.Page(users.render, title="Mitarbeiter", icon="👤", url_path="mitarbeiter"),
     "settings": st.Page(settings.render, title="Einstellungen", icon="⚙️", url_path="einstellungen"),
 }
@@ -85,6 +87,7 @@ sidebar_groups = {
     ],
     "Werkzeuge": [pages_map["datasheet"]],
     "Verwaltung": [
+        pages_map["migration"],
         pages_map["users"],
         pages_map["settings"],
     ],
