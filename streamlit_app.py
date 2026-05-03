@@ -17,6 +17,7 @@ from features import (
     datasheet,
     deliveries,
     dunning,
+    inbox,
     incoming_invoices,
     invoices,
     orders,
@@ -88,6 +89,12 @@ pages_map = {
         title="Eingangsrechnungen",
         icon="📥",
         url_path="eingangsrechnungen",
+    ),
+    "inbox": st.Page(
+        inbox.render,
+        title="Posteingang",
+        icon="📬",
+        url_path="posteingang",
     ),
     "stock": st.Page(
         stock.render,

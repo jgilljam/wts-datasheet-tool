@@ -749,6 +749,20 @@ def _render_detail_tab() -> None:
     _render_pdf_section(delivery)
     st.divider()
 
+    from core.ui.mail_modal import render_mail_section
+    render_mail_section(
+        beleg_type="delivery",
+        beleg_id=delivery["id"],
+        beleg_number=delivery.get("delivery_number") or delivery["id"],
+        party_id=delivery.get("party_id"),
+        pdf_storage_path=delivery.get("pdf_storage_path"),
+        template_ctx={
+            "issued_at": _format_date(delivery.get("issued_at") or delivery.get("expected_at")) or "",
+        },
+        is_locked=bool(delivery.get("locked_at")) or delivery.get("status") in ("shipped", "received", "cancelled"),
+    )
+    st.divider()
+
     st.markdown("### Dokumente")
     _render_documents(delivery)
 

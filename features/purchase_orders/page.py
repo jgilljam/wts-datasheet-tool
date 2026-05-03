@@ -721,6 +721,20 @@ def _render_detail_tab() -> None:
     _render_pdf_section(p)
     st.divider()
 
+    from core.ui.mail_modal import render_mail_section
+    render_mail_section(
+        beleg_type="po",
+        beleg_id=p["id"],
+        beleg_number=p.get("po_number") or p["id"],
+        party_id=p.get("supplier_id"),
+        pdf_storage_path=p.get("pdf_storage_path"),
+        template_ctx={
+            "issued_at": format_date(p.get("issued_at")) or "",
+        },
+        is_locked=(p.get("status") or "draft") in PO_LOCKED_STATUSES,
+    )
+    st.divider()
+
     _render_history(p)
 
 

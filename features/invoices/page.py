@@ -909,6 +909,24 @@ def _render_detail_tab() -> None:
     _render_pdf_section(inv)
     st.divider()
 
+    from core.ui.mail_modal import render_mail_section
+    is_storno = bool(inv.get("reverses_id"))
+    render_mail_section(
+        beleg_type="invoice",
+        beleg_id=inv["id"],
+        beleg_number=inv.get("invoice_number") or inv["id"],
+        party_id=inv.get("customer_id"),
+        pdf_storage_path=inv.get("pdf_storage_path"),
+        template_ctx={
+            "issued_at": format_date(inv.get("issued_at")) or "",
+            "due_date": format_date(inv.get("due_date")) or "",
+            "customer_reference": inv.get("customer_reference") or "",
+            "is_storno": is_storno,
+        },
+        is_locked=(inv.get("status") or "draft") in INVOICE_LOCKED_STATUSES,
+    )
+    st.divider()
+
     _render_history(inv)
 
 

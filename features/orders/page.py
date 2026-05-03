@@ -788,6 +788,21 @@ def _render_detail_tab() -> None:
     _render_pdf_section(o)
     st.divider()
 
+    from core.ui.mail_modal import render_mail_section
+    render_mail_section(
+        beleg_type="order",
+        beleg_id=o["id"],
+        beleg_number=o.get("order_number") or o["id"],
+        party_id=o.get("customer_id"),
+        pdf_storage_path=o.get("pdf_storage_path"),
+        template_ctx={
+            "issued_at": format_date(o.get("issued_at")) or "",
+            "customer_reference": o.get("customer_reference") or "",
+        },
+        is_locked=(o.get("status") or "draft") in ORDER_LOCKED_STATUSES,
+    )
+    st.divider()
+
     _render_history(o)
 
 

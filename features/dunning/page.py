@@ -354,6 +354,23 @@ def _render_dunning_history() -> None:
             key=f"dl_mahnung_{ids[idx]}",
         )
 
+    st.divider()
+    inv_full = inv_repo.get_invoice(inv_ids[idx]) or {}
+    from core.ui.mail_modal import render_mail_section
+    beleg_number_mail = f"M{dunning['level']}-{inv_full.get('invoice_number') or ''}"
+    render_mail_section(
+        beleg_type="dunning",
+        beleg_id=ids[idx],
+        beleg_number=beleg_number_mail,
+        party_id=inv_full.get("customer_id"),
+        pdf_storage_path=dunning.get("pdf_storage_path"),
+        template_ctx={
+            "beleg_number": inv_full.get("invoice_number") or "",
+            "due_date": format_date(dunning.get("due_date")) or "",
+        },
+        is_locked=True,
+    )
+
 
 def render() -> None:
     render_header(

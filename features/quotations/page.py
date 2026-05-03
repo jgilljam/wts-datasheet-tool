@@ -485,6 +485,21 @@ def _render_detail(qid: str) -> None:
         cents_to_eur((q.get("total_net_cents") or 0) + (q.get("tax_total_cents") or 0)) or "0,00 €",
     )
 
+    st.divider()
+    from core.ui.mail_modal import render_mail_section
+    render_mail_section(
+        beleg_type="quotation",
+        beleg_id=qid,
+        beleg_number=q.get("quotation_number") or qid,
+        party_id=q.get("customer_id"),
+        pdf_storage_path=q.get("pdf_storage_path"),
+        template_ctx={
+            "valid_until": format_date(q.get("valid_until")) or "",
+            "customer_reference": q.get("customer_reference") or "",
+        },
+        is_locked=q.get("status") in {"sent", "accepted", "rejected", "expired", "converted"},
+    )
+
 
 def _render_items_editor(qid: str, items: list[dict[str, Any]], is_locked: bool) -> None:
     """Items über st.data_editor — vollständige Replace beim Speichern."""
