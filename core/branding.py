@@ -251,8 +251,11 @@ def apply_branding() -> None:
             border: 1px solid {BORDER};
           }}
 
-          /* hide hamburger + footer */
-          [data-testid="stToolbar"] {{ display: none; }}
+          /* Deploy-Button + Hamburger ausblenden — aber NICHT die ganze
+             Toolbar, sonst verschwindet der Sidebar-Aufklapp-Pfeil. */
+          [data-testid="stDeployButton"],
+          .stAppDeployButton,
+          [data-testid="stToolbarActions"] {{ display: none !important; }}
           footer {{ visibility: hidden; }}
           header[data-testid="stHeader"] {{ background: transparent; }}
 
