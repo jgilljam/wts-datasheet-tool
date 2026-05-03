@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from core.db import supabase
+from core.utils import sanitize_search
 
 
 def list_incoming_invoices(
@@ -28,7 +29,7 @@ def list_incoming_invoices(
     if supplier_id:
         q = q.eq("supplier_id", supplier_id)
     if search:
-        s = search.replace("%", r"\%").replace(",", " ")
+        s = sanitize_search(search)
         q = q.or_(
             f"supplier_invoice_number.ilike.%{s}%,"
             f"supplier_reference.ilike.%{s}%,"

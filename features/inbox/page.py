@@ -26,7 +26,7 @@ import streamlit as st
 
 from core.branding import render_footer, render_header
 from core.db import supabase
-from core.utils import format_date
+from core.utils import format_date, sanitize_search
 
 from lib import imap_inbox, mail, mail_pipeline, mail_to_beleg
 
@@ -84,10 +84,11 @@ def _list_mails(
     if statuses:
         q = q.in_("status", statuses)
     if search:
-        s = search.replace("%", r"\%")
-        q = q.or_(
-            f"subject.ilike.%{s}%,from_email.ilike.%{s}%,body_text.ilike.%{s}%"
-        )
+        s = sanitize_search(search)
+        if s:
+            q = q.or_(
+                f"subject.ilike.%{s}%,from_email.ilike.%{s}%,body_text.ilike.%{s}%"
+            )
     return q.order("received_at", desc=True).limit(limit).execute().data or []
 
 
@@ -345,7 +346,7 @@ def _render_mail_list(filters: dict[str, Any]) -> str | None:
 
 def _render_detail(mail_id: str) -> None:
     mail_row = (
-        supabase().table("incoming_mails").select("*").eq("id", mail_id).single().execute().data
+        supabase().table("incoming_mails").select("*").eq("id", mail_id).maybe_single().execute().data
     )
     if not mail_row:
         st.error("Mail nicht gefunden.")

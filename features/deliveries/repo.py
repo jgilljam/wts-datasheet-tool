@@ -8,6 +8,7 @@ from typing import Any
 import streamlit as st
 
 from core.db import supabase
+from core.utils import sanitize_search
 from core.snapshots import apply_snapshot_to_items, apply_snapshot_view
 
 
@@ -44,7 +45,7 @@ def list_deliveries(
     if party_id:
         q = q.eq("party_id", party_id)
     if search:
-        s = search.replace("%", r"\%").replace(",", " ")
+        s = sanitize_search(search)
         q = q.or_(
             f"delivery_number.ilike.%{s}%,"
             f"tracking_number.ilike.%{s}%,"

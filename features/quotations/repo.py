@@ -6,6 +6,7 @@ from datetime import date
 from typing import Any
 
 from core.db import supabase
+from core.utils import sanitize_search
 from core.snapshots import apply_snapshot_to_items, apply_snapshot_view
 
 
@@ -36,7 +37,7 @@ def list_quotations(
     if valid_to:
         q = q.lte("valid_until", valid_to.isoformat())
     if search:
-        s = search.replace("%", r"\%").replace(",", " ")
+        s = sanitize_search(search)
         q = q.or_(
             f"quotation_number.ilike.%{s}%,"
             f"customer_reference.ilike.%{s}%,"

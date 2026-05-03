@@ -89,7 +89,7 @@ def _match_party(
             for c in contacts:
                 if not c.get("party_id"):
                     continue
-                p = sb.table("parties").select("id, type").eq("id", c["party_id"]).single().execute().data
+                p = sb.table("parties").select("id, type").eq("id", c["party_id"]).maybe_single().execute().data
                 if p and p.get("type") == party_type:
                     return p["id"], "domain"
 
@@ -508,7 +508,7 @@ def link_po_acknowledgment(
     sb = supabase()
     mail = sb.table("incoming_mails").select(
         "id, subject, body_text, body_html, attachments_meta"
-    ).eq("id", mail_id).single().execute().data
+    ).eq("id", mail_id).maybe_single().execute().data
     if not mail:
         return {"linked": False, "reason": "mail not found"}
 

@@ -86,7 +86,7 @@ def classify_and_extract(mail_id: str) -> dict[str, Any]:
     api_key, model = creds
     sb = supabase()
 
-    mail = sb.table("incoming_mails").select("*").eq("id", mail_id).single().execute().data
+    mail = sb.table("incoming_mails").select("*").eq("id", mail_id).maybe_single().execute().data
     if not mail:
         raise ValueError(f"Mail {mail_id} nicht gefunden.")
 
@@ -150,7 +150,7 @@ def classify_and_extract(mail_id: str) -> dict[str, Any]:
                 update["ai_error"] = "Keine PDF-Anhänge zum OCRen."
 
         sb.table("incoming_mails").update(update).eq("id", mail_id).execute()
-        return sb.table("incoming_mails").select("*").eq("id", mail_id).single().execute().data
+        return sb.table("incoming_mails").select("*").eq("id", mail_id).maybe_single().execute().data
     except Exception as e:
         return _set_failure(mail_id, str(e))
 
@@ -160,7 +160,7 @@ def _set_failure(mail_id: str, msg: str) -> dict[str, Any]:
         "status": "failed",
         "ai_error": msg[:500],
     }).eq("id", mail_id).execute()
-    return supabase().table("incoming_mails").select("*").eq("id", mail_id).single().execute().data
+    return supabase().table("incoming_mails").select("*").eq("id", mail_id).maybe_single().execute().data
 
 
 # ============================================================
@@ -180,7 +180,7 @@ def auto_convert_if_eligible(mail_id: str, *, actor_email: str | None = None) ->
         return {"converted": False, "reason": "auto_convert disabled"}
 
     sb = supabase()
-    mail = sb.table("incoming_mails").select("*").eq("id", mail_id).single().execute().data
+    mail = sb.table("incoming_mails").select("*").eq("id", mail_id).maybe_single().execute().data
     if not mail:
         return {"converted": False, "reason": "mail not found"}
     if mail.get("status") == "linked":

@@ -8,6 +8,7 @@ from typing import Any
 import streamlit as st
 
 from core.db import supabase
+from core.utils import sanitize_search
 from core.snapshots import apply_snapshot_to_items, apply_snapshot_view
 
 
@@ -38,7 +39,7 @@ def list_orders(
     if due_to:
         q = q.lte("due_date", due_to.isoformat())
     if search:
-        s = search.replace("%", r"\%").replace(",", " ")
+        s = sanitize_search(search)
         q = q.or_(
             f"order_number.ilike.%{s}%,"
             f"customer_reference.ilike.%{s}%,"

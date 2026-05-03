@@ -47,3 +47,22 @@ def eur_to_cents(eur: float | None) -> int | None:
     if eur is None:
         return None
     return int(round(float(eur) * 100))
+
+
+def sanitize_search(s: str | None) -> str:
+    """Macht User-Input für PostgREST-or()/ilike-Queries sicher.
+
+    PostgREST nutzt `,` `(` `)` `:` als Filter-Syntax-Trenner. Ein User-Input
+    mit z.B. „CO., LTD." führt sonst zum Parse-Crash. Wir ersetzen die
+    Sonderzeichen durch Leerzeichen — fürs ILIKE-Matching ist das ok, weil
+    `%` davor und danach jeden String matcht.
+
+    Außerdem entschärfen wir das `%`-Wildcard, damit User keine Wildcard-
+    Suche durchführen können (würde die DB überlasten).
+    """
+    if not s:
+        return ""
+    out = s
+    for ch in ("%", ",", "(", ")", ":", "*"):
+        out = out.replace(ch, " ")
+    return " ".join(out.split())  # Mehrfach-Leerzeichen zusammenführen

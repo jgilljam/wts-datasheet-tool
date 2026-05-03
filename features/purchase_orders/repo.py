@@ -6,6 +6,7 @@ from datetime import date
 from typing import Any
 
 from core.db import supabase
+from core.utils import sanitize_search
 from core.snapshots import apply_snapshot_to_items, apply_snapshot_view
 
 
@@ -37,7 +38,7 @@ def list_pos(
     if expected_to:
         q = q.lte("expected_at", expected_to.isoformat())
     if search:
-        s = search.replace("%", r"\%").replace(",", " ")
+        s = sanitize_search(search)
         q = q.or_(
             f"po_number.ilike.%{s}%,"
             f"supplier_reference.ilike.%{s}%,"

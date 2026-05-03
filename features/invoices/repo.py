@@ -8,6 +8,7 @@ from typing import Any
 import streamlit as st
 
 from core.db import supabase
+from core.utils import sanitize_search
 from core.snapshots import apply_snapshot_to_items, apply_snapshot_view
 
 
@@ -41,7 +42,7 @@ def list_invoices(
     if issued_to:
         q = q.lte("issued_at", issued_to.isoformat())
     if search:
-        s = search.replace("%", r"\%").replace(",", " ")
+        s = sanitize_search(search)
         q = q.or_(
             f"invoice_number.ilike.%{s}%,"
             f"customer_reference.ilike.%{s}%,"
