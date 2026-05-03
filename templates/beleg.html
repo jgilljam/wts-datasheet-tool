@@ -8,32 +8,25 @@
 <body>
 
 {# ============================================================
-   HEADER — Logo links, Page-Hinweis + Titel rechts
+   HEADER — Logo + Adresse links, Voice/Fax mittig, Titel + Meta rechts
    ============================================================ #}
 <header class="page-header">
-  <div class="page-hint">Seite: 1</div>
   <div class="header-left">
     <img class="logo" src="{{ logo_uri }}" alt="WTS">
+    <div class="company-block">
+      <div class="company-name">{{ company.legal_name or 'Weber Trading &amp; Service' }}</div>
+      {% if company.street %}<div>{{ company.street }}</div>{% endif %}
+      {% if company.zip or company.city %}<div>{{ company.zip or '' }} {{ company.city or '' }}{% if company.country_code and company.country_code != 'DE' %}, {{ company.country_code }}{% endif %}</div>{% endif %}
+      {% if company.country_code and company.country_code == 'DE' %}<div>Deutschland</div>{% endif %}
+    </div>
   </div>
-  <div class="header-right">
-    <h1 class="doc-title">{{ doc_label|upper }}</h1>
-  </div>
-</header>
-
-{# ============================================================
-   ABSENDER + META — Adresse links, Voice/Fax mittig, Beleg-Meta rechts
-   ============================================================ #}
-<section class="company-meta-row">
-  <div class="company-block">
-    <div class="company-name">{{ company.legal_name or 'Weber Trading &amp; Service' }}</div>
-    {% if company.street %}<div>{{ company.street }}</div>{% endif %}
-    {% if company.zip or company.city %}<div>{{ company.zip or '' }} {{ company.city or '' }}{% if company.country_code and company.country_code != 'DE' %}, {{ company.country_code }}{% endif %}</div>{% endif %}
-  </div>
-  <div class="contact-block">
+  <div class="header-mid">
     {% if company.phone %}<div><span class="lbl">Phone:</span> {{ company.phone }}</div>{% endif %}
     {% if company.email %}<div><span class="lbl">Email:</span> {{ company.email }}</div>{% endif %}
   </div>
-  <div class="meta-block">
+  <div class="header-right">
+    <div class="page-hint">Seite: 1</div>
+    <div class="doc-title">{{ doc_label }}</div>
     <table class="meta-table">
       <tr><td class="lbl">{{ doc_number_label }}:</td><td class="val">{{ doc_number }}</td></tr>
       <tr><td class="lbl">{{ doc_date_label }}:</td><td class="val">{{ doc_date or today }}</td></tr>
@@ -57,9 +50,9 @@
       {% endif %}
     </table>
   </div>
-</section>
+</header>
 
-{# Hinweise (Storno / Reverse-Charge / Streckengeschäft) als kompakte Banner #}
+{# Hinweise als kompakte Banner #}
 {% if storno_banner %}
 <section class="alert-banner danger">{{ storno_banner }}</section>
 {% endif %}
@@ -68,7 +61,7 @@
 {% endif %}
 
 {# ============================================================
-   PARTEIEN — Bill-To und Ship-To als zwei Boxen mit Akzent-Header
+   PARTEIEN — Bill-To / Ship-To als zwei dezente Boxen
    ============================================================ #}
 <section class="parties">
   <div class="party-box">
@@ -95,7 +88,7 @@
 </section>
 
 {# ============================================================
-   MASTER-DATEN-ZEILE — wie Wilspec Customer P.O. | Ship VIA | Terms | VAT
+   MASTER-DATEN-ZEILE — Customer P.O. | Ship VIA | Terms | VAT
    ============================================================ #}
 <table class="master-table">
   <thead>
@@ -117,7 +110,7 @@
 </table>
 
 {# ============================================================
-   ITEMS-TABELLE — Wilspec-Stil mit sichtbaren Trennlinien
+   ITEMS-TABELLE
    ============================================================ #}
 <table class="items-table">
   <thead>
@@ -126,9 +119,9 @@
       <th class="col-sku">SKU</th>
       <th class="col-desc">Bezeichnung</th>
       <th class="col-qty">Menge</th>
-      <th class="col-unit">Einheit</th>
+      <th class="col-unit">Einh.</th>
       <th class="col-price">{{ price_label }}</th>
-      <th class="col-disc">Rabatt</th>
+      <th class="col-disc">Rab.</th>
       <th class="col-tax">USt</th>
       <th class="col-total">Summe netto</th>
     </tr>
@@ -173,16 +166,21 @@
 <section class="footer-grid">
   <div class="footer-col gf-col">
     {% if company.managing_director %}
-    <div><span class="lbl">Geschäftsführer:</span> {{ company.managing_director }}</div>
+    <div><strong>Geschäftsführer:</strong> {{ company.managing_director }}</div>
     {% endif %}
     {% if company.hr_register %}
     <div>{{ company.hr_register }}</div>
     {% endif %}
     {% if company.tax_number %}
-    <div><span class="lbl">Steuer-Nr.:</span> {{ company.tax_number }}</div>
+    <div><strong>Steuer-Nr.:</strong> {{ company.tax_number }}</div>
     {% endif %}
     {% if company.vat_id %}
-    <div><span class="lbl">USt-IdNr.:</span> {{ company.vat_id }}</div>
+    <div><strong>USt-IdNr.:</strong> {{ company.vat_id }}</div>
+    {% endif %}
+    {% if bank_lines %}
+    <div class="bank-inline">
+      {% for line in bank_lines %}<div>{{ line }}</div>{% endfor %}
+    </div>
     {% endif %}
   </div>
 
@@ -190,8 +188,8 @@
     {% if footer_help %}
     <div class="help-text">{{ footer_help }}</div>
     {% endif %}
-    {% if company.phone %}<div><span class="lbl">Phone:</span> {{ company.phone }}</div>{% endif %}
-    {% if company.email %}<div><span class="lbl">Email:</span> {{ company.email }}</div>{% endif %}
+    {% if company.phone %}<div>Phone: {{ company.phone }}</div>{% endif %}
+    {% if company.email %}<div>Email: {{ company.email }}</div>{% endif %}
   </div>
 
   <div class="footer-col totals-col">
@@ -232,21 +230,6 @@
 {% if footer_hint %}
 <section class="footer-hint">{{ footer_hint }}</section>
 {% endif %}
-
-{# ============================================================
-   BANK-BLOCK — links unten, kompakt
-   ============================================================ #}
-{% if bank_lines %}
-<section class="bank-block">
-  {% for line in bank_lines %}
-  <div>{{ line }}</div>
-  {% endfor %}
-</section>
-{% endif %}
-
-{# ============================================================
-   PAGE-FOOTER — schmal, nur Firmenname + Seite (von WeasyPrint via @page)
-   ============================================================ #}
 
 </body>
 </html>

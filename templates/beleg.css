@@ -1,18 +1,23 @@
 /* ============================================================
-   WTS Beleg-Stylesheet — Wilspec-inspiriertes Layout, WTS-Branding
-   PRIMARY  #0A2540  (Navy — Akzent-Header, Linien)
-   ACCENT   #D84B41  (Rot — Warn / Storno / Fälligkeit)
+   WTS Beleg-Stylesheet — klassisches Wilspec-Layout, dezente Farben
+   ============================================================
+   FARBPALETTE
+   --header-bar    #5C7A9B  (medium navy-blue für Header-Stripes)
+   --header-bg     #E8EFF5  (light tint für Highlights, Grand-Total)
+   --line          #C7D2DC  (dünne Borders)
+   --text          #1A1918
+   --muted         #6B7280
+   --accent-warn   #C0392B  (rot für Fälligkeit / Storno)
    ============================================================ */
 
 @page {
   size: A4;
-  margin: 12mm 12mm 14mm 12mm;
+  margin: 14mm 14mm 14mm 14mm;
   @bottom-center {
     content: "Weber Trading & Service · Kaiserstraße 35 · 41061 Mönchengladbach · info@wts-trading.de  —  Seite " counter(page) " / " counter(pages);
-    font-family: "Inter", system-ui, sans-serif;
+    font-family: "Helvetica", "Arial", sans-serif;
     font-size: 6.5pt;
     color: #6B7280;
-    letter-spacing: 0.04em;
   }
 }
 
@@ -21,202 +26,185 @@
 html, body {
   margin: 0;
   padding: 0;
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-family: "Helvetica", "Arial", sans-serif;
   font-size: 8.5pt;
   color: #1A1918;
   line-height: 1.4;
 }
 
 /* ============================================================
-   HEADER
+   HEADER — drei Spalten: Logo+Adresse | Kontakt | Titel+Meta
    ============================================================ */
 .page-header {
   display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  border-bottom: 2pt solid #0A2540;
-  padding-bottom: 6pt;
-  margin-bottom: 8pt;
-  position: relative;
+  grid-template-columns: 1.4fr 1fr 1.4fr;
+  gap: 12pt;
+  align-items: start;
+  margin-bottom: 14pt;
 }
-.page-header .page-hint {
-  position: absolute;
-  top: -2pt;
-  right: 0;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 6.5pt;
-  color: #6B7280;
-  letter-spacing: 0.06em;
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4pt;
 }
-.page-header .header-left { display: flex; align-items: center; }
-.page-header .logo { height: 34pt; width: auto; }
-.page-header .header-right {
-  text-align: right;
-  padding-top: 6pt;
+.header-left .logo {
+  height: 38pt;
+  width: auto;
+  margin-bottom: 2pt;
 }
-.doc-title {
-  margin: 0;
-  font-size: 22pt;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: #0A2540;
-  line-height: 1;
-}
-
-/* ============================================================
-   ABSENDER + KONTAKT + META — drei Spalten
-   ============================================================ */
-.company-meta-row {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr 1.2fr;
-  gap: 10pt;
-  margin-bottom: 10pt;
+.header-left .company-block {
   font-size: 8pt;
-  line-height: 1.4;
+  line-height: 1.45;
+  color: #1A1918;
 }
-.company-meta-row .company-block .company-name {
+.header-left .company-name {
   font-weight: 700;
-  color: #0A2540;
-  font-size: 9pt;
+  font-size: 8pt;
+  color: #1A1918;
   margin-bottom: 1pt;
 }
-.company-meta-row .contact-block { color: #1A1918; }
-.company-meta-row .lbl {
-  display: inline-block;
-  min-width: 36pt;
-  color: #6B7280;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 7pt;
-  letter-spacing: 0.04em;
+.header-mid {
+  font-size: 8pt;
+  line-height: 1.5;
+  color: #1A1918;
+  padding-top: 30pt; /* runter, sodass Voice/Fax neben der Adresse steht */
 }
-
-/* Meta-Table rechts oben */
-.meta-table {
-  border-collapse: collapse;
-  width: 100%;
+.header-mid .lbl {
+  display: inline-block;
+  min-width: 38pt;
+  color: #1A1918;
+}
+.header-right {
+  text-align: right;
   font-size: 8pt;
 }
-.meta-table td {
-  padding: 1pt 2pt;
+.header-right .page-hint {
+  font-size: 7pt;
+  color: #6B7280;
+  margin-bottom: 8pt;
+}
+.header-right .doc-title {
+  font-family: "Helvetica", "Arial", sans-serif;
+  font-size: 13pt;
+  font-weight: 700;
+  color: #1A1918;
+  letter-spacing: 0.01em;
+  margin-bottom: 8pt;
+  line-height: 1;
+}
+.header-right .meta-table {
+  margin-left: auto;
+  border-collapse: collapse;
+  font-size: 8pt;
+}
+.header-right .meta-table td {
+  padding: 1pt 0;
   vertical-align: top;
 }
-.meta-table .lbl {
-  color: #6B7280;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 7pt;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
+.header-right .meta-table .lbl {
   text-align: right;
-  padding-right: 8pt;
-}
-.meta-table .val {
-  font-weight: 600;
+  padding-right: 6pt;
   color: #1A1918;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+  font-weight: 400;
+  white-space: nowrap;
 }
-.meta-table .lbl.warn,
-.meta-table .val.warn {
-  color: #D84B41;
+.header-right .meta-table .val {
+  text-align: left;
+  font-weight: 700;
+  color: #1A1918;
+  white-space: nowrap;
+}
+.header-right .meta-table .lbl.warn,
+.header-right .meta-table .val.warn {
+  color: #C0392B;
 }
 
 /* ============================================================
-   ALERT-BANNER (Storno / Streckengeschäft / Reverse-Charge)
+   ALERT-BANNER
    ============================================================ */
 .alert-banner {
-  padding: 6pt 10pt;
-  margin-bottom: 8pt;
-  font-size: 8.5pt;
-  border-radius: 2pt;
-  border-left-width: 3pt;
-  border-left-style: solid;
+  padding: 5pt 8pt;
+  margin: 0 0 8pt 0;
+  font-size: 8pt;
+  border-left: 2pt solid;
 }
 .alert-banner.danger {
-  background: #FEE2E2;
-  border-left-color: #D84B41;
-  color: #7F1D1D;
+  background: #FBEAE5;
+  border-left-color: #C0392B;
+  color: #7B1F12;
   font-weight: 600;
 }
 .alert-banner.info {
-  background: #FEF9C3;
-  border-left-color: #CA8A04;
-  color: #713F12;
+  background: #FEF7DA;
+  border-left-color: #B8860B;
+  color: #6B5009;
 }
-.alert-banner strong { color: inherit; font-weight: 700; }
 
 /* ============================================================
-   PARTEIEN — zwei Boxen mit Akzent-Header
+   PARTEIEN — Bill-To / Ship-To
    ============================================================ */
 .parties {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8pt;
+  gap: 4pt;
   margin-bottom: 10pt;
 }
 .party-box {
-  border: 0.6pt solid #0A2540;
-  border-radius: 2pt;
-  overflow: hidden;
+  border: 0.4pt solid #C7D2DC;
 }
 .party-box .party-header {
-  background: #0A2540;
+  background: #5C7A9B;
   color: #FFFFFF;
-  padding: 4pt 8pt;
-  font-size: 7pt;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-weight: 600;
+  font-size: 7.5pt;
+  font-weight: 700;
+  padding: 3pt 8pt;
+  letter-spacing: 0;
 }
 .party-box .party-body {
-  padding: 6pt 8pt 8pt 8pt;
-  font-size: 8.5pt;
-  line-height: 1.4;
+  padding: 5pt 8pt 7pt 8pt;
+  font-size: 8pt;
+  line-height: 1.45;
   background: #FFFFFF;
 }
 .party-box .party-name {
   font-weight: 700;
-  font-size: 9.5pt;
-  color: #0A2540;
+  font-size: 8.5pt;
+  color: #1A1918;
   margin-bottom: 2pt;
 }
 .party-box .vat-line {
   margin-top: 3pt;
   font-size: 7.5pt;
-  color: #6B7280;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  color: #4B5563;
 }
 
 /* ============================================================
-   MASTER-DATEN-TABELLE
+   MASTER-DATEN
    ============================================================ */
 .master-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 8pt;
-  border: 0.6pt solid #0A2540;
+  margin-bottom: 6pt;
 }
 .master-table thead th {
-  background: #0A2540;
+  background: #5C7A9B;
   color: #FFFFFF;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 6.8pt;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-weight: 600;
-  text-align: left;
-  padding: 4pt 8pt;
-  border-right: 0.5pt solid rgba(255,255,255,0.18);
+  font-size: 7.5pt;
+  font-weight: 700;
+  text-align: center;
+  padding: 3pt 6pt;
+  border-right: 0.4pt solid #FFFFFF;
 }
 .master-table thead th:last-child { border-right: none; }
 .master-table tbody td {
   padding: 5pt 8pt;
-  font-size: 8.5pt;
-  font-weight: 500;
+  font-size: 8pt;
   background: #FFFFFF;
-  border-right: 0.5pt solid #D4D4D8;
+  border: 0.4pt solid #C7D2DC;
+  border-top: none;
+  text-align: center;
+  font-weight: 600;
 }
-.master-table tbody td:last-child { border-right: none; }
 
 /* ============================================================
    ITEMS-TABELLE
@@ -225,44 +213,41 @@ html, body {
   width: 100%;
   border-collapse: collapse;
   font-size: 8pt;
-  margin-bottom: 8pt;
-  border: 0.6pt solid #0A2540;
+  margin-bottom: 6pt;
 }
 .items-table thead th {
-  background: #0A2540;
+  background: #5C7A9B;
   color: #FFFFFF;
-  text-align: left;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-weight: 600;
-  font-size: 6.8pt;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-  padding: 5pt 6pt;
-  border-right: 0.5pt solid rgba(255,255,255,0.18);
+  text-align: center;
+  font-weight: 700;
+  font-size: 7.5pt;
+  padding: 4pt 4pt;
+  border-right: 0.4pt solid #FFFFFF;
+  white-space: nowrap;
 }
 .items-table thead th:last-child { border-right: none; }
 .items-table tbody td {
-  padding: 5pt 6pt;
-  border-bottom: 0.4pt solid #D4D4D8;
-  border-right: 0.4pt solid #E4E4E7;
+  padding: 6pt 6pt;
+  border-bottom: 0.4pt solid #E4E7EC;
   vertical-align: top;
   background: #FFFFFF;
 }
-.items-table tbody td:last-child { border-right: none; }
-.items-table tbody tr:last-child td { border-bottom: none; }
+.items-table tbody tr:last-child td {
+  border-bottom: 0.4pt solid #C7D2DC;
+}
 
 .items-table .col-pos   { width: 4%;  text-align: center; color: #6B7280; font-variant-numeric: tabular-nums; }
 .items-table .col-sku   { width: 11%; white-space: nowrap; }
 .items-table .col-desc  { width: 30%; }
-.items-table .col-qty   { width: 7%;  text-align: right; white-space: nowrap; }
-.items-table .col-unit  { width: 6%;  white-space: nowrap; }
-.items-table .col-price { width: 11%; text-align: right; white-space: nowrap; }
-.items-table .col-disc  { width: 7%;  text-align: right; white-space: nowrap; }
-.items-table .col-tax   { width: 6%;  text-align: right; white-space: nowrap; }
-.items-table .col-total { width: 13%; text-align: right; white-space: nowrap; }
+.items-table .col-qty   { width: 7%;  text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.items-table .col-unit  { width: 6%;  text-align: center; color: #4B5563; }
+.items-table .col-price { width: 11%; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.items-table .col-disc  { width: 7%;  text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.items-table .col-tax   { width: 6%;  text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.items-table .col-total { width: 12%; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; }
 .items-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .items-table .mono {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: "Courier New", "Courier", monospace;
   font-size: 7.5pt;
 }
 .items-table .col-desc .title { font-weight: 600; color: #1A1918; }
@@ -273,30 +258,25 @@ html, body {
   line-height: 1.35;
 }
 .items-table .col-desc .sub.mark {
-  color: #CA8A04;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 7pt;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  color: #B8860B;
+  font-size: 7.2pt;
+  font-weight: 600;
 }
 .items-table .empty-row {
-  padding: 14pt 0;
+  padding: 12pt 0;
   text-align: center;
   color: #6B7280;
   font-style: italic;
+  border: 0.4pt solid #C7D2DC;
 }
 
 /* ============================================================
-   CUSTOMS / TAX-CAPTION unter der Items-Tabelle
+   CUSTOMS / TAX-CAPTION
    ============================================================ */
 .customs-block {
   font-size: 7.5pt;
-  color: #6B7280;
-  margin: -4pt 0 10pt 0;
-  padding: 4pt 6pt;
-  background: #F5F5F7;
-  border-left: 2pt solid #0A2540;
-  border-radius: 1pt;
+  color: #4B5563;
+  margin: 4pt 0 8pt 0;
   line-height: 1.5;
 }
 
@@ -305,57 +285,50 @@ html, body {
    ============================================================ */
 .footer-grid {
   display: grid;
-  grid-template-columns: 0.9fr 0.9fr 1.6fr;
-  gap: 10pt;
-  margin-top: 4pt;
+  grid-template-columns: 1.2fr 1.1fr 1.3fr;
+  gap: 14pt;
+  margin-top: 18pt;
   page-break-inside: avoid;
-  font-size: 8pt;
-  line-height: 1.45;
+  font-size: 7.5pt;
+  line-height: 1.5;
 }
-.footer-col {
-  padding: 6pt 0 0 0;
-  border-top: 1pt solid #0A2540;
+.footer-col strong { font-weight: 700; color: #1A1918; }
+.footer-col.gf-col { color: #1A1918; }
+.footer-col.gf-col .bank-inline {
+  margin-top: 6pt;
+  padding-top: 4pt;
+  border-top: 0.4pt solid #E4E7EC;
 }
-.footer-col .lbl {
-  color: #6B7280;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 7pt;
-  letter-spacing: 0.04em;
-  margin-right: 2pt;
-}
-.footer-col.gf-col,
 .footer-col.help-col {
-  color: #1A1918;
+  text-align: left;
 }
 .footer-col.help-col .help-text {
   margin-bottom: 4pt;
-  color: #4B5563;
   font-style: italic;
-  line-height: 1.4;
+  color: #4B5563;
 }
 
-/* Totals */
+/* Totals-Tabelle — minimal, mit subtilem Highlight */
 .totals-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 8.5pt;
 }
 .totals-table td {
-  padding: 2.5pt 4pt;
+  padding: 2.5pt 6pt;
   vertical-align: top;
 }
 .totals-table .lbl {
-  color: #4B5563;
+  color: #1A1918;
   text-align: left;
-  font-family: "Inter", system-ui, sans-serif;
-  font-size: 8.5pt;
-  letter-spacing: 0;
+  font-weight: 400;
 }
 .totals-table .val.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   color: #1A1918;
+  white-space: nowrap;
 }
 .totals-table tr.sub .lbl,
 .totals-table tr.sub .val {
@@ -366,54 +339,38 @@ html, body {
   padding-bottom: 0;
 }
 .totals-table tr.grand-total td {
-  background: #0A2540;
-  color: #FFFFFF;
+  background: #E8EFF5;
+  color: #1A1918;
   font-weight: 700;
-  font-size: 10pt;
-  padding: 6pt 8pt;
-  border-top: none;
-  white-space: nowrap;
-}
-.totals-table tr.grand-total .lbl { color: #FFFFFF; }
-.totals-table tr.grand-total .val.num { color: #FFFFFF; }
-.totals-table tr.open-balance td {
-  background: #FEE2E2;
-  color: #7F1D1D;
-  font-weight: 700;
-  padding: 5pt 8pt;
   font-size: 9pt;
+  padding: 5pt 6pt;
+  border-top: 0.6pt solid #5C7A9B;
 }
-.totals-table tr.open-balance .lbl { color: #7F1D1D; }
-.totals-table tr.open-balance .val.num { color: #7F1D1D; }
+.totals-table tr.grand-total .lbl { color: #1A1918; }
+.totals-table tr.grand-total .val.num { color: #1A1918; }
+.totals-table tr.open-balance td {
+  background: #FBEAE5;
+  color: #7B1F12;
+  font-weight: 700;
+  padding: 4pt 6pt;
+  font-size: 8.5pt;
+  border-top: 0.4pt solid #C0392B;
+}
+.totals-table tr.open-balance .lbl { color: #7B1F12; }
+.totals-table tr.open-balance .val.num { color: #7B1F12; }
 
 /* ============================================================
    FOOTER-HINT (Zahlungs-/Lieferbedingungen)
    ============================================================ */
 .footer-hint {
   margin-top: 10pt;
-  padding: 6pt 10pt;
-  background: #F5F5F7;
-  border-left: 2pt solid #0A2540;
-  font-size: 8pt;
+  padding: 5pt 8pt;
+  background: #F5F7FA;
+  font-size: 7.5pt;
   color: #4B5563;
-  border-radius: 1pt;
-  line-height: 1.45;
-  page-break-inside: avoid;
-}
-
-/* ============================================================
-   BANK-BLOCK
-   ============================================================ */
-.bank-block {
-  margin-top: 8pt;
-  padding: 5pt 0 0 0;
-  border-top: 0.6pt solid #D4D4D8;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 7pt;
-  color: #6B7280;
-  letter-spacing: 0.04em;
   line-height: 1.5;
   page-break-inside: avoid;
+  border-left: 1.5pt solid #5C7A9B;
 }
 
 /* ============================================================
@@ -427,14 +384,11 @@ html, body {
 }
 .signatures .sig { flex: 1; text-align: center; }
 .signatures .sig .line {
-  border-bottom: 0.6pt solid #1A1918;
-  height: 28pt;
+  border-bottom: 0.5pt solid #1A1918;
+  height: 26pt;
   margin-bottom: 3pt;
 }
 .signatures .sig .sig-label {
   font-size: 7pt;
   color: #6B7280;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
 }

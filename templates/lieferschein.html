@@ -9,28 +9,25 @@
 <body>
 
 {# ============================================================
-   HEADER
+   HEADER — Logo+Adresse / Kontakt / Titel+Meta (3 Spalten)
    ============================================================ #}
 <header class="page-header">
-  <div class="page-hint">Seite: 1</div>
-  <div class="header-left"><img class="logo" src="{{ logo_uri }}" alt="WTS"></div>
-  <div class="header-right"><h1 class="doc-title">{{ doc_label|upper }}</h1></div>
-</header>
-
-{# ============================================================
-   ABSENDER + KONTAKT + META
-   ============================================================ #}
-<section class="company-meta-row">
-  <div class="company-block">
-    <div class="company-name">{{ company.legal_name or 'Weber Trading &amp; Service' }}</div>
-    {% if company.street %}<div>{{ company.street }}</div>{% endif %}
-    {% if company.zip or company.city %}<div>{{ company.zip or '' }} {{ company.city or '' }}{% if company.country_code and company.country_code != 'DE' %}, {{ company.country_code }}{% endif %}</div>{% endif %}
+  <div class="header-left">
+    <img class="logo" src="{{ logo_uri }}" alt="WTS">
+    <div class="company-block">
+      <div class="company-name">{{ company.legal_name or 'Weber Trading &amp; Service' }}</div>
+      {% if company.street %}<div>{{ company.street }}</div>{% endif %}
+      {% if company.zip or company.city %}<div>{{ company.zip or '' }} {{ company.city or '' }}{% if company.country_code and company.country_code != 'DE' %}, {{ company.country_code }}{% endif %}</div>{% endif %}
+      {% if company.country_code and company.country_code == 'DE' %}<div>Deutschland</div>{% endif %}
+    </div>
   </div>
-  <div class="contact-block">
+  <div class="header-mid">
     {% if company.phone %}<div><span class="lbl">Phone:</span> {{ company.phone }}</div>{% endif %}
     {% if company.email %}<div><span class="lbl">Email:</span> {{ company.email }}</div>{% endif %}
   </div>
-  <div class="meta-block">
+  <div class="header-right">
+    <div class="page-hint">Seite: 1</div>
+    <div class="doc-title">{{ doc_label }}</div>
     <table class="meta-table">
       <tr><td class="lbl">{{ doc_number_label }}:</td><td class="val">{{ d.delivery_number }}</td></tr>
       <tr><td class="lbl">Datum:</td><td class="val">{{ today }}</td></tr>
@@ -48,7 +45,7 @@
       {% endif %}
     </table>
   </div>
-</section>
+</header>
 
 {% if dropshipping %}
 <section class="alert-banner info">
