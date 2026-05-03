@@ -339,20 +339,20 @@ def add_item(delivery_id: str, item: dict[str, Any]) -> str:
 
 
 def replace_items(delivery_id: str, items: list[dict[str, Any]]) -> None:
-    """Komplett-Ersatz aller Positionen einer Lieferung (nutzt der Editor)."""
-    supabase().table("delivery_items").delete().eq("delivery_id", delivery_id).execute()
-    if not items:
-        return
-    rows = []
-    for i, raw in enumerate(items, start=1):
+    """Atomar — delete+insert in einer Transaktion via RPC. Lock-Check serverseitig."""
+    rows: list[dict[str, Any]] = []
+    for i, raw in enumerate(items or [], start=1):
         if not raw:
             continue
         clean = {k: _ser(v) for k, v in raw.items() if v is not None and v != ""}
-        clean["delivery_id"] = delivery_id
         clean["pos_nr"] = clean.get("pos_nr") or i
         rows.append(clean)
-    if rows:
-        supabase().table("delivery_items").insert(rows).execute()
+
+    supabase().rpc("replace_delivery_items", {
+        "p_delivery_id": delivery_id,
+        "p_items": rows,
+    }).execute()
+
     _log_event(delivery_id, "items_replaced", {"count": len(rows)})
 
 

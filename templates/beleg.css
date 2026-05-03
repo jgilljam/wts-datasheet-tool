@@ -205,6 +205,15 @@ h2 {
   border-bottom: 1px solid #E4E4E7;
 }
 .totals-table .label { color: #52525B; }
+.totals-table .label.sub,
+.totals-table .num.sub {
+  font-size: 8pt;
+  color: #71717A;
+  padding-top: 1pt;
+  padding-bottom: 1pt;
+  border-bottom: none;
+  font-style: italic;
+}
 .totals-table .num {
   text-align: right;
   font-variant-numeric: tabular-nums;

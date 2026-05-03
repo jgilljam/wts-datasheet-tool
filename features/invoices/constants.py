@@ -49,6 +49,22 @@ INVOICE_NEXT_ACTION = {
     "overdue":        ("paid",           "💶 Vollzahlung erfassen"),
 }
 
+# Erlaubte Status-Übergänge.
+# - Aus draft: issued (Festschreiben) ODER cancelled (Entwurf verwerfen).
+# - Aus issued/partially_paid/overdue: zur Zahlung oder ins reversed (durch Storno-Service).
+# - paid darf nicht direkt zurück (nur reversed via Storno).
+# - cancelled ist terminal (Draft-Wegwurf).
+# - reversed ist terminal (Original wurde storniert).
+INVOICE_ALLOWED_TRANSITIONS: dict[str, set[str]] = {
+    "draft":          {"issued", "cancelled"},
+    "issued":         {"partially_paid", "paid", "overdue", "reversed"},
+    "partially_paid": {"paid", "overdue", "reversed"},
+    "paid":           {"reversed"},
+    "overdue":        {"partially_paid", "paid", "reversed"},
+    "cancelled":      set(),
+    "reversed":       set(),
+}
+
 # Gründe für Storno (Pflicht-Dropdown beim Stornieren)
 CANCELLATION_REASONS = [
     "Falscher Empfänger",

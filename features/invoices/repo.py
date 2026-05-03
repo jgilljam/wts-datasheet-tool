@@ -141,25 +141,15 @@ def list_invoice_events(invoice_id: str, limit: int = 100) -> list[dict[str, Any
 
 
 def next_invoice_number(year: int) -> str:
-    """`RE-2026-0001` — fortlaufend, lückenlos, jahresgebunden."""
-    prefix = f"RE-{year}-"
-    res = (
-        supabase()
-        .table("invoices")
-        .select("invoice_number")
-        .like("invoice_number", f"{prefix}%")
-        .order("invoice_number", desc=True)
-        .limit(1)
-        .execute()
-    )
-    if not res.data:
-        return f"{prefix}0001"
-    last = res.data[0]["invoice_number"]
-    try:
-        n = int(last.rsplit("-", 1)[-1]) + 1
-    except (ValueError, IndexError):
-        n = 1
-    return f"{prefix}{n:04d}"
+    """`RE-2026-0001` — atomar via Postgres-RPC, race-condition-frei.
+
+    Vergibt fortlaufend pro Jahr; lückenlos solange die Nummernvergabe in
+    derselben Transaktion wie der Issue-Update liegt (siehe service.issue_invoice).
+    """
+    res = supabase().rpc("next_belegnummer", {
+        "p_belegart": "invoice", "p_jahr": year,
+    }).execute()
+    return res.data
 
 
 def list_invoices_for_order(order_id: str) -> list[dict[str, Any]]:

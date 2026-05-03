@@ -99,32 +99,67 @@ def _build_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
-def _build_totals(items: list[dict[str, Any]], header: dict[str, Any]) -> dict[str, str]:
-    """Liefert formatierte Summen-Strings + 'tax_rate_summary' (z.B. '19 %' oder '0% (Reverse-Charge)')."""
+def _build_totals(items: list[dict[str, Any]], header: dict[str, Any]) -> dict[str, Any]:
+    """Liefert formatierte Summen + Pro-Satz-Aufschlüsselung (UStG §14 Abs.4 Nr.8).
+
+    Returns:
+        dict mit:
+          - net_total_eur, tax_total_eur, gross_total_eur, discount_total_eur
+          - tax_breakdown: list of {"rate_label", "net_eur", "tax_eur"} pro Steuersatz
+          - tax_rate_summary: kompakter Text (für Backward-Compat / Footer)
+    """
+    discount = int(header.get("discount_total_cents") or 0)
+
+    # Pro Steuersatz aggregieren (Cent-genau aus Items, nicht aus Header)
+    by_rate: dict[float, dict[str, int]] = {}
+    for it in items:
+        rate = float(it.get("tax_rate") or 0)
+        line_net = int(it.get("line_total_cents") or 0)
+        line_tax = int(it.get("tax_amount_cents") or 0)
+        bucket = by_rate.setdefault(rate, {"net": 0, "tax": 0})
+        bucket["net"] += line_net
+        bucket["tax"] += line_tax
+
+    # Header-Summen sind Source-of-Truth; Items-Summen für Pro-Satz-Aufschlüsselung
     net = int(header.get("total_net_cents") or 0)
     tax = int(header.get("tax_total_cents") or 0)
-    discount = int(header.get("discount_total_cents") or 0)
+    if not net and by_rate:
+        net = sum(b["net"] for b in by_rate.values())
+    if not tax and by_rate:
+        tax = sum(b["tax"] for b in by_rate.values())
     gross = net + tax
 
-    # Tax-Rate-Summary: einheitlich falls alle Positionen denselben Satz haben, sonst „gemischt"
-    rates = {float(it.get("tax_rate") or 0) for it in items}
-    if len(rates) == 1:
-        rate = rates.pop()
+    tax_breakdown: list[dict[str, str]] = []
+    for rate in sorted(by_rate.keys()):
+        b = by_rate[rate]
         if rate == 0:
-            tax_label = "0 % (Reverse-Charge)"
+            label = "0 % (Reverse-Charge)"
         else:
-            tax_label = f"{int(rate)} %"
-    elif len(rates) > 1:
-        tax_label = "gemischt"
+            label = f"{int(rate) if rate.is_integer() else rate:g} %"
+        tax_breakdown.append({
+            "rate_label": label,
+            "net_eur": _eur(b["net"]),
+            "tax_eur": _eur(b["tax"]),
+        })
+
+    if len(by_rate) == 1:
+        only_rate = next(iter(by_rate.keys()))
+        if only_rate == 0:
+            tax_rate_summary = "0 % (Reverse-Charge)"
+        else:
+            tax_rate_summary = f"{int(only_rate) if only_rate.is_integer() else only_rate:g} %"
+    elif len(by_rate) > 1:
+        tax_rate_summary = ", ".join(b["rate_label"] for b in tax_breakdown)
     else:
-        tax_label = ""
+        tax_rate_summary = ""
 
     return {
         "net_total_eur": _eur(net),
         "tax_total_eur": _eur(tax),
         "gross_total_eur": _eur(gross),
         "discount_total_eur": _eur(discount) if discount else "",
-        "tax_rate_summary": tax_label,
+        "tax_rate_summary": tax_rate_summary,
+        "tax_breakdown": tax_breakdown,
     }
 
 
@@ -140,10 +175,13 @@ def render_auftragsbestaetigung_pdf(order: dict[str, Any], items: list[dict[str,
                `shipping_address`, `billing_address`).
         items: aus `features.orders.repo.list_order_items`.
     """
+    from features.invoices import repo as inv_repo  # lazy import wg. cycle
+
     customer = order.get("customer") or {}
     shipping_addr = order.get("shipping_address")
     rev_charge = bool(customer.get("is_reverse_charge_eligible"))
 
+    company = inv_repo.get_company_settings()
     totals = _build_totals(items, order)
 
     payment_hint_parts = []
@@ -178,6 +216,7 @@ def render_auftragsbestaetigung_pdf(order: dict[str, Any], items: list[dict[str,
         "items": _build_items(items),
         "footer_hint": " ".join(payment_hint_parts) or None,
         "show_signature": False,  # AB ist meist beidseitig per E-Mail bestätigt
+        "company": company,
         **totals,
     }
 
@@ -314,10 +353,13 @@ def render_bestellung_pdf(po: dict[str, Any], items: list[dict[str, Any]]) -> by
             `source_order`, `shipping_address`).
         items: aus `features.purchase_orders.repo.list_po_items`.
     """
+    from features.invoices import repo as inv_repo  # lazy import wg. cycle
+
     supplier = po.get("supplier") or {}
     shipping_addr = po.get("shipping_address")
     source_order = po.get("source_order") or {}
     rev_charge = bool(supplier.get("is_reverse_charge_eligible"))
+    company = inv_repo.get_company_settings()
 
     has_dropship_items = any(it.get("is_dropship") for it in items)
     dropship_note = ""
@@ -365,6 +407,7 @@ def render_bestellung_pdf(po: dict[str, Any], items: list[dict[str, Any]]) -> by
         "items": _build_items(items),
         "footer_hint": " ".join(hint_parts) or None,
         "show_signature": False,
+        "company": company,
         **totals,
     }
 

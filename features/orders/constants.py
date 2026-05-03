@@ -50,6 +50,18 @@ ORDER_NEXT_ACTION = {
     "shipped":       ("done",          "✓ Abschließen"),
 }
 
+# Erlaubte Status-Übergänge (Forward + Cancel von jedem Punkt + Auto-Propagation
+# Confirmed→Partial wenn Lieferung erfolgt). Sprünge wie draft→done werden blockiert.
+ORDER_ALLOWED_TRANSITIONS: dict[str, set[str]] = {
+    "draft":         {"confirmed", "cancelled"},
+    "confirmed":     {"in_production", "partial", "shipped", "cancelled"},
+    "in_production": {"partial", "shipped", "cancelled"},
+    "partial":       {"shipped", "done", "cancelled"},
+    "shipped":       {"done", "cancelled"},
+    "done":          set(),     # terminal
+    "cancelled":     set(),     # terminal
+}
+
 # USt-Default-Sätze
 TAX_RATE_DEFAULT = 19  # Prozent (DE Regel-USt)
 TAX_RATE_REDUCED = 7

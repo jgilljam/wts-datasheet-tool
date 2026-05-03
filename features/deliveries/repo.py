@@ -120,26 +120,12 @@ def list_delivery_events(delivery_id: str, limit: int = 100) -> list[dict[str, A
 
 
 def next_delivery_number(direction: str, year: int) -> str:
-    """Generiert die nächste freie Liefernr — `L-2026-0001` outbound, `WE-2026-0001` inbound."""
-    prefix = "L" if direction == "outbound" else "WE"
-    pattern = f"{prefix}-{year}-%"
-    res = (
-        supabase()
-        .table("deliveries")
-        .select("delivery_number")
-        .like("delivery_number", pattern)
-        .order("delivery_number", desc=True)
-        .limit(1)
-        .execute()
-    )
-    if not res.data:
-        return f"{prefix}-{year}-0001"
-    last = res.data[0]["delivery_number"]
-    try:
-        n = int(last.rsplit("-", 1)[-1]) + 1
-    except (ValueError, IndexError):
-        n = 1
-    return f"{prefix}-{year}-{n:04d}"
+    """Atomar via Postgres-RPC — `L-2026-0001` outbound, `WE-2026-0001` inbound."""
+    belegart = "delivery_outbound" if direction == "outbound" else "delivery_inbound"
+    res = supabase().rpc("next_belegnummer", {
+        "p_belegart": belegart, "p_jahr": year,
+    }).execute()
+    return res.data
 
 
 # ---------- Stammdaten für Dropdowns ----------

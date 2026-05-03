@@ -200,22 +200,8 @@ def get_fulfillment_balance(order_id: str) -> list[dict[str, Any]]:
 
 
 def next_order_number(year: int) -> str:
-    """`AB-2026-0001` (AB = Auftragsbestätigung)."""
-    prefix = f"AB-{year}-"
-    res = (
-        supabase()
-        .table("orders")
-        .select("order_number")
-        .like("order_number", f"{prefix}%")
-        .order("order_number", desc=True)
-        .limit(1)
-        .execute()
-    )
-    if not res.data:
-        return f"{prefix}0001"
-    last = res.data[0]["order_number"]
-    try:
-        n = int(last.rsplit("-", 1)[-1]) + 1
-    except (ValueError, IndexError):
-        n = 1
-    return f"{prefix}{n:04d}"
+    """`AB-2026-0001` — atomar via Postgres-RPC."""
+    res = supabase().rpc("next_belegnummer", {
+        "p_belegart": "order", "p_jahr": year,
+    }).execute()
+    return res.data

@@ -108,22 +108,8 @@ def list_deliveries_for_po(po_id: str) -> list[dict[str, Any]]:
 
 
 def next_po_number(year: int) -> str:
-    """`BE-2026-0001` (BE = Bestellung)."""
-    prefix = f"BE-{year}-"
-    res = (
-        supabase()
-        .table("purchase_orders")
-        .select("po_number")
-        .like("po_number", f"{prefix}%")
-        .order("po_number", desc=True)
-        .limit(1)
-        .execute()
-    )
-    if not res.data:
-        return f"{prefix}0001"
-    last = res.data[0]["po_number"]
-    try:
-        n = int(last.rsplit("-", 1)[-1]) + 1
-    except (ValueError, IndexError):
-        n = 1
-    return f"{prefix}{n:04d}"
+    """`BE-2026-0001` — atomar via Postgres-RPC."""
+    res = supabase().rpc("next_belegnummer", {
+        "p_belegart": "po", "p_jahr": year,
+    }).execute()
+    return res.data

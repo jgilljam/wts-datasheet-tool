@@ -54,6 +54,18 @@ PO_NEXT_ACTION = {
     "partial":       ("received",      "📦 Komplett erhalten markieren"),
 }
 
+# Erlaubte Status-Übergänge
+PO_ALLOWED_TRANSITIONS: dict[str, set[str]] = {
+    "draft":         {"sent", "cancelled"},
+    "sent":          {"confirmed", "cancelled"},
+    "confirmed":     {"in_production", "shipped", "partial", "cancelled"},
+    "in_production": {"shipped", "partial", "cancelled"},
+    "shipped":       {"partial", "received", "cancelled"},
+    "partial":       {"received", "cancelled"},
+    "received":      set(),
+    "cancelled":     set(),
+}
+
 TAX_RATE_DEFAULT = 19  # Prozent
 TAX_RATE_REVERSE_CHARGE = 0  # EU-Lieferant mit USt-ID + Reverse-Charge
 

@@ -10,9 +10,15 @@
 <header class="page-header">
   <img class="logo" src="{{ logo_uri }}" alt="WTS">
   <div class="header-meta">
-    <div class="company">Weber Trading &amp; Service</div>
+    <div class="company">{{ company.legal_name or 'Weber Trading &amp; Service' }}</div>
+    {% if company.tagline %}
+    <div class="tagline">{{ company.tagline }}</div>
+    {% else %}
     <div class="tagline">Industrial Trading · seit 1997</div>
-    <div class="company-addr">Kaiserstraße 35 · 41061 Mönchengladbach</div>
+    {% endif %}
+    <div class="company-addr">
+      {{ company.street or '' }}{% if company.zip or company.city %} · {{ company.zip or '' }} {{ company.city or '' }}{% endif %}
+    </div>
   </div>
 </header>
 
@@ -117,8 +123,21 @@
     {% if discount_total_eur %}
     <tr><td class="label">Rabatt gesamt</td><td class="num">−{{ discount_total_eur }}</td></tr>
     {% endif %}
-    <tr><td class="label">Netto</td><td class="num">{{ net_total_eur }}</td></tr>
+    <tr><td class="label">Netto gesamt</td><td class="num">{{ net_total_eur }}</td></tr>
+    {% if tax_breakdown and tax_breakdown|length > 1 %}
+      {% for b in tax_breakdown %}
+      <tr>
+        <td class="label sub">davon Netto bei {{ b.rate_label }}</td>
+        <td class="num sub">{{ b.net_eur }}</td>
+      </tr>
+      <tr>
+        <td class="label">USt {{ b.rate_label }}</td>
+        <td class="num">{{ b.tax_eur }}</td>
+      </tr>
+      {% endfor %}
+    {% else %}
     <tr><td class="label">USt {{ tax_rate_summary }}</td><td class="num">{{ tax_total_eur }}</td></tr>
+    {% endif %}
     <tr class="total"><td class="label"><strong>Brutto / Gesamt</strong></td><td class="num"><strong>{{ gross_total_eur }}</strong></td></tr>
   </table>
 </section>

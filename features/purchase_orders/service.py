@@ -44,6 +44,11 @@ def update_po(po_id: str, changes: dict[str, Any]) -> None:
 
 
 def update_status(po_id: str, new_status: str, comment: str | None = None) -> None:
+    from .constants import PO_ALLOWED_TRANSITIONS, PO_STATUSES
+
+    if new_status not in PO_STATUSES:
+        raise ValueError(f"Unbekannter PO-Status: {new_status}")
+
     cur = (
         supabase()
         .table("purchase_orders")
@@ -55,6 +60,14 @@ def update_status(po_id: str, new_status: str, comment: str | None = None) -> No
     old_status = cur.data["status"]
     if old_status == new_status:
         return
+
+    allowed = PO_ALLOWED_TRANSITIONS.get(old_status, set())
+    if new_status not in allowed:
+        raise PermissionError(
+            f"Status-Übergang '{old_status}' → '{new_status}' nicht erlaubt. "
+            f"Mögliche: {sorted(allowed) or 'keine (terminal)'}"
+        )
+
     supabase().table("purchase_orders").update({"status": new_status}).eq("id", po_id).execute()
     _log(po_id, "status_change", {
         "old_status": old_status,
@@ -73,37 +86,20 @@ def lock_po(po_id: str) -> None:
 # ---------- Items ----------
 
 def replace_items(po_id: str, items: list[dict[str, Any]]) -> None:
-    """Komplett-Ersatz aller Positionen. Nur erlaubt im Draft."""
-    cur = (
-        supabase()
-        .table("purchase_orders")
-        .select("status")
-        .eq("id", po_id)
-        .single()
-        .execute()
-    )
-    if cur.data["status"] in PO_LOCKED_STATUSES:
-        raise PermissionError(
-            f"Bestellung im Status '{cur.data['status']}' ist GoBD-gesperrt. "
-            "Erst stornieren + neu anlegen."
-        )
-
-    supabase().table("po_items").delete().eq("po_id", po_id).execute()
-    if not items:
-        _log(po_id, "items_replaced", {"count": 0})
-        _recompute_totals(po_id)
-        return
-
-    rows = []
-    for i, raw in enumerate(items, start=1):
+    """Atomar — delete+insert in einer Transaktion via RPC. Lock-Check serverseitig."""
+    rows: list[dict[str, Any]] = []
+    for i, raw in enumerate(items or [], start=1):
         if not raw:
             continue
         clean = {k: ser_value(v) for k, v in raw.items() if v is not None and v != ""}
-        clean["po_id"] = po_id
         clean["pos_nr"] = clean.get("pos_nr") or i
         rows.append(clean)
-    if rows:
-        supabase().table("po_items").insert(rows).execute()
+
+    supabase().rpc("replace_po_items", {
+        "p_po_id": po_id,
+        "p_items": rows,
+    }).execute()
+
     _log(po_id, "items_replaced", {"count": len(rows)})
     _recompute_totals(po_id)
 

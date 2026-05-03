@@ -124,6 +124,11 @@ def auto_mark_overdue(*, today: date | None = None) -> int:
 
 
 def update_status(invoice_id: str, new_status: str, comment: str | None = None) -> None:
+    from .constants import INVOICE_ALLOWED_TRANSITIONS, INVOICE_STATUSES
+
+    if new_status not in INVOICE_STATUSES:
+        raise ValueError(f"Unbekannter Rechnungs-Status: {new_status}")
+
     cur = (
         supabase()
         .table("invoices")
@@ -135,9 +140,14 @@ def update_status(invoice_id: str, new_status: str, comment: str | None = None) 
     old_status = cur.data["status"]
     if old_status == new_status:
         return
-    # GoBD: einmal issued, kein Rückweg auf draft
-    if old_status != "draft" and new_status == "draft":
-        raise PermissionError("Rechnung kann nicht auf Entwurf zurückgesetzt werden (GoBD).")
+
+    allowed = INVOICE_ALLOWED_TRANSITIONS.get(old_status, set())
+    if new_status not in allowed:
+        raise PermissionError(
+            f"Status-Übergang '{old_status}' → '{new_status}' nicht erlaubt. "
+            f"Mögliche: {sorted(allowed) or 'keine (terminal)'}. "
+            "Stornorechnung erfordert reverse_invoice()."
+        )
 
     supabase().table("invoices").update({"status": new_status}).eq("id", invoice_id).execute()
     _log(invoice_id, "status_change", {
@@ -180,36 +190,24 @@ def record_payment(invoice_id: str, amount_cents: int, paid_at: date | None = No
 # ---------- Items ----------
 
 def replace_items(invoice_id: str, items: list[dict[str, Any]]) -> None:
-    cur = (
-        supabase()
-        .table("invoices")
-        .select("status")
-        .eq("id", invoice_id)
-        .single()
-        .execute()
-    )
-    if cur.data["status"] in INVOICE_LOCKED_STATUSES:
-        raise PermissionError(
-            f"Rechnung im Status '{cur.data['status']}' ist GoBD-gesperrt. "
-            "Stornierung erfordert Storno-Beleg."
-        )
+    """Atomar — delete+insert in einer Transaktion via RPC.
 
-    supabase().table("invoice_items").delete().eq("invoice_id", invoice_id).execute()
-    if not items:
-        _log(invoice_id, "items_replaced", {"count": 0})
-        _recompute_totals(invoice_id)
-        return
-
-    rows = []
-    for i, raw in enumerate(items, start=1):
+    GoBD-Lock-Check passiert serverseitig (RPC liest invoices.locked_at und
+    bricht ab). Bei Insert-Fehler wird der Delete automatisch zurückgerollt.
+    """
+    rows: list[dict[str, Any]] = []
+    for i, raw in enumerate(items or [], start=1):
         if not raw:
             continue
         clean = {k: ser_value(v) for k, v in raw.items() if v is not None and v != ""}
-        clean["invoice_id"] = invoice_id
         clean["pos_nr"] = clean.get("pos_nr") or i
         rows.append(clean)
-    if rows:
-        supabase().table("invoice_items").insert(rows).execute()
+
+    supabase().rpc("replace_invoice_items", {
+        "p_invoice_id": invoice_id,
+        "p_items": rows,
+    }).execute()
+
     _log(invoice_id, "items_replaced", {"count": len(rows)})
     _recompute_totals(invoice_id)
 
@@ -350,20 +348,12 @@ def create_invoice_from_order(order_id: str, *, mode: str = "complete") -> str:
 
     replace_items(invoice_id, invoice_items)
 
-    # qty_invoiced auf order_items hochzählen
+    # qty_invoiced auf order_items atomar hochzählen via RPC (race-frei)
     for order_item_id, qty in items_to_update:
-        cur = (
-            supabase()
-            .table("order_items")
-            .select("qty_invoiced")
-            .eq("id", order_item_id)
-            .single()
-            .execute()
-        )
-        new_invoiced = float(cur.data.get("qty_invoiced") or 0) + qty
-        supabase().table("order_items").update({
-            "qty_invoiced": new_invoiced,
-        }).eq("id", order_item_id).execute()
+        supabase().rpc("bump_qty_invoiced", {
+            "p_order_item_id": order_item_id,
+            "p_delta": qty,
+        }).execute()
 
     _log(invoice_id, "created_from_order", {
         "order_id": order_id,
@@ -412,6 +402,17 @@ def reverse_invoice(invoice_id: str, reason: str, reversal_date: date | None = N
     rev_date = reversal_date or date.today()
     items = repo.list_invoice_items(invoice_id)
 
+    # UStG §14c: Storno einer Leistung muss das Leistungsdatum der ORIGINALLEISTUNG
+    # tragen, nicht das Datum der Stornobuchung. issue_invoice() erzwingt service_date
+    # bei Festschreibung, daher MUSS das Original eines hat — wenn nicht, ist die
+    # Datenlage korrupt und wir brechen lieber ab als ein falsches Datum zu schreiben.
+    original_service_date = original.get("service_date")
+    if not original_service_date:
+        raise ValueError(
+            f"Original-Rechnung {original.get('invoice_number')} hat kein Leistungsdatum. "
+            "Storno nicht möglich (UStG §14c)."
+        )
+
     # Storno-Beleg-Header
     storno_payload: dict[str, Any] = {
         "customer_id": original["customer_id"],
@@ -423,7 +424,7 @@ def reverse_invoice(invoice_id: str, reason: str, reversal_date: date | None = N
         "payment_terms_days": 0,
         "is_reverse_charge": original.get("is_reverse_charge", False),
         "issued_at": rev_date,
-        "service_date": original.get("service_date") or rev_date,
+        "service_date": original_service_date,
         "due_date": rev_date,
         "reverses_id": invoice_id,
         "cancellation_reason": reason.strip(),
@@ -486,21 +487,14 @@ def reverse_invoice(invoice_id: str, reason: str, reversal_date: date | None = N
         "cancellation_reason": reason.strip(),
     }).eq("id", invoice_id).execute()
 
-    # qty_invoiced auf order_items zurücksetzen (rückgebucht)
+    # qty_invoiced auf order_items rückbuchen — Original-Items haben positive qty,
+    # daher delta = -qty (RPC clampt auf 0; Race-frei dank atomarem Increment)
     for it in items:
         if it.get("source_order_item_id"):
-            cur = (
-                supabase()
-                .table("order_items")
-                .select("qty_invoiced")
-                .eq("id", it["source_order_item_id"])
-                .single()
-                .execute()
-            )
-            new_invoiced = max(0.0, float(cur.data.get("qty_invoiced") or 0) - float(it.get("qty") or 0))
-            supabase().table("order_items").update({
-                "qty_invoiced": new_invoiced,
-            }).eq("id", it["source_order_item_id"]).execute()
+            supabase().rpc("bump_qty_invoiced", {
+                "p_order_item_id": it["source_order_item_id"],
+                "p_delta": -float(it.get("qty") or 0),
+            }).execute()
 
     _log(invoice_id, "reversed", {
         "storno_id": storno_id,
