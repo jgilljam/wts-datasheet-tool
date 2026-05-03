@@ -139,6 +139,16 @@ def _table(rows: list[dict[str, Any]]) -> None:
 
 
 def _render_list_tab() -> None:
+    # Automatik: einmal pro Page-Load fällige Rechnungen auf 'overdue' setzen
+    if not st.session_state.get("__overdue_check_done"):
+        try:
+            n = service.auto_mark_overdue()
+            if n:
+                st.toast(f"{n} Rechnung(en) wegen Fälligkeit auf „Überfällig“ gesetzt", icon="⚠️")
+        except Exception:
+            pass
+        st.session_state["__overdue_check_done"] = True
+
     c1, c2 = st.columns([3, 2])
     default_open = [s for s in INVOICE_STATUSES if s not in INVOICE_DONE_STATUSES]
     statuses = c1.multiselect(

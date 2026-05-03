@@ -94,6 +94,35 @@ def issue_invoice(invoice_id: str) -> str:
     return new_number
 
 
+def auto_mark_overdue(*, today: date | None = None) -> int:
+    """Setzt Rechnungen mit `due_date < today` und Status (issued|partially_paid)
+    auf 'overdue'. Idempotent — schreibt audit-event nur bei tatsächlichem Wechsel.
+
+    Returns: Anzahl der hochgesetzten Rechnungen.
+    """
+    today = today or date.today()
+    rows = (
+        supabase()
+        .table("invoices")
+        .select("id, status, due_date")
+        .in_("status", ["issued", "partially_paid"])
+        .lt("due_date", today.isoformat())
+        .limit(500)
+        .execute()
+        .data
+    ) or []
+    count = 0
+    for r in rows:
+        supabase().table("invoices").update({"status": "overdue"}).eq("id", r["id"]).execute()
+        _log(r["id"], "status_change", {
+            "old_status": r["status"],
+            "new_status": "overdue",
+            "comment": "Auto-overdue: Fälligkeit überschritten",
+        })
+        count += 1
+    return count
+
+
 def update_status(invoice_id: str, new_status: str, comment: str | None = None) -> None:
     cur = (
         supabase()

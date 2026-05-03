@@ -60,16 +60,21 @@ def update_delivery(delivery_id: str, changes: dict[str, Any]) -> None:
 STOCK_TRIGGER_INBOUND = {"stored"}      # Wareneingang → Bestand +
 STOCK_TRIGGER_OUTBOUND = {"handed_to_carrier"}  # Versand → Bestand −
 
+# Statuse, ab denen Lieferungen als „echt erfüllt" zählen — für Parent-Status-Propagation
+DELIVERY_FULFILLED_OUTBOUND = {"handed_to_carrier", "in_transit", "delivered"}
+DELIVERY_FULFILLED_INBOUND = {"arrived", "partial_received", "received", "inspected", "stored"}
+
 
 def update_status(delivery_id: str, new_status: str, comment: str | None = None) -> dict[str, int]:
-    """Setzt Status, schreibt Audit-Eintrag, verbucht ggf. ins Lager.
+    """Setzt Status, schreibt Audit-Eintrag, verbucht ggf. ins Lager, propagiert
+    bei Bedarf den Status an Auftrag/Bestellung.
 
-    Returns: {"booked": N} mit Anzahl der verbuchten Positionen.
+    Returns: {"booked": N, "parent_updated": "shipped"|"partial"|"received"|None}.
     """
     cur = (
         supabase()
         .table("deliveries")
-        .select("status, direction")
+        .select("status, direction, related_order_id, related_po_id")
         .eq("id", delivery_id)
         .single()
         .execute()
@@ -91,7 +96,166 @@ def update_status(delivery_id: str, new_status: str, comment: str | None = None)
     elif direction == "outbound" and new_status in STOCK_TRIGGER_OUTBOUND:
         booked = _book_stock_for_delivery(delivery_id, "outbound")
 
-    return {"booked": booked}
+    # Auto-Propagation an Parent (Auftrag / Bestellung)
+    parent_updated: str | None = None
+    if direction == "outbound" and new_status in DELIVERY_FULFILLED_OUTBOUND:
+        order_id = cur.data.get("related_order_id")
+        if order_id:
+            parent_updated = _propagate_to_order(order_id)
+    elif direction == "inbound" and new_status in DELIVERY_FULFILLED_INBOUND:
+        po_id = cur.data.get("related_po_id")
+        if po_id:
+            parent_updated = _propagate_to_po(po_id)
+
+    return {"booked": booked, "parent_updated": parent_updated}
+
+
+def _sum_delivered_by_article(
+    *, related_field: str, related_id: str, fulfilled_statuses: set[str]
+) -> dict[str, float]:
+    """Aufsummierte Liefermengen je article_id über alle qualifizierenden Lieferungen."""
+    ds = (
+        supabase()
+        .table("deliveries")
+        .select("id")
+        .eq(related_field, related_id)
+        .in_("status", list(fulfilled_statuses))
+        .execute()
+        .data
+    ) or []
+    if not ds:
+        return {}
+    delivery_ids = [d["id"] for d in ds]
+    items = (
+        supabase()
+        .table("delivery_items")
+        .select("article_id, qty_actual, qty_expected, delivery_id")
+        .in_("delivery_id", delivery_ids)
+        .execute()
+        .data
+    ) or []
+    by_art: dict[str, float] = {}
+    for it in items:
+        aid = it.get("article_id")
+        if not aid:
+            continue
+        qty = it.get("qty_actual") or it.get("qty_expected") or 0
+        by_art[aid] = by_art.get(aid, 0.0) + float(qty)
+    return by_art
+
+
+def _propagate_to_order(order_id: str) -> str | None:
+    """Auftrag auf 'partial' / 'shipped' setzen, wenn Liefermengen es rechtfertigen.
+    Returns: neuer Status, falls geändert; sonst None.
+    """
+    delivered = _sum_delivered_by_article(
+        related_field="related_order_id",
+        related_id=order_id,
+        fulfilled_statuses=DELIVERY_FULFILLED_OUTBOUND,
+    )
+    o_items = (
+        supabase()
+        .table("order_items")
+        .select("article_id, qty")
+        .eq("order_id", order_id)
+        .execute()
+        .data
+    ) or []
+    if not o_items:
+        return None
+
+    has_articles = any(it.get("article_id") for it in o_items)
+    if not has_articles:
+        return None
+
+    fully = True
+    any_done = False
+    for it in o_items:
+        aid = it.get("article_id")
+        if not aid:
+            continue
+        ordered = float(it.get("qty") or 0)
+        delv = delivered.get(aid, 0.0)
+        if delv > 0:
+            any_done = True
+        if delv < ordered:
+            fully = False
+
+    cur = (
+        supabase().table("orders").select("status").eq("id", order_id).single().execute().data
+    )
+    cur_status = cur["status"]
+
+    new_status: str | None = None
+    if fully and cur_status in ("confirmed", "in_production", "partial"):
+        new_status = "shipped"
+    elif any_done and cur_status in ("confirmed", "in_production"):
+        new_status = "partial"
+
+    if not new_status or new_status == cur_status:
+        return None
+
+    from features.orders import service as order_service
+    order_service.update_status(
+        order_id, new_status, comment="Auto: aus Lieferungs-Update propagiert"
+    )
+    return new_status
+
+
+def _propagate_to_po(po_id: str) -> str | None:
+    """Bestellung auf 'partial' / 'received' setzen, wenn Wareneingang es rechtfertigt."""
+    delivered = _sum_delivered_by_article(
+        related_field="related_po_id",
+        related_id=po_id,
+        fulfilled_statuses=DELIVERY_FULFILLED_INBOUND,
+    )
+    p_items = (
+        supabase()
+        .table("po_items")
+        .select("article_id, qty")
+        .eq("po_id", po_id)
+        .execute()
+        .data
+    ) or []
+    if not p_items:
+        return None
+
+    has_articles = any(it.get("article_id") for it in p_items)
+    if not has_articles:
+        return None
+
+    fully = True
+    any_done = False
+    for it in p_items:
+        aid = it.get("article_id")
+        if not aid:
+            continue
+        ordered = float(it.get("qty") or 0)
+        delv = delivered.get(aid, 0.0)
+        if delv > 0:
+            any_done = True
+        if delv < ordered:
+            fully = False
+
+    cur = (
+        supabase().table("purchase_orders").select("status").eq("id", po_id).single().execute().data
+    )
+    cur_status = cur["status"]
+
+    new_status: str | None = None
+    if fully and cur_status in ("sent", "confirmed", "in_production", "shipped", "partial"):
+        new_status = "received"
+    elif any_done and cur_status in ("sent", "confirmed", "in_production", "shipped"):
+        new_status = "partial"
+
+    if not new_status or new_status == cur_status:
+        return None
+
+    from features.purchase_orders import service as po_service
+    po_service.update_status(
+        po_id, new_status, comment="Auto: aus Wareneingang propagiert"
+    )
+    return new_status
 
 
 def _book_stock_for_delivery(delivery_id: str, movement_type: str) -> int:

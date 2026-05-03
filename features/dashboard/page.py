@@ -10,6 +10,7 @@ import streamlit as st
 from core.branding import render_footer, render_header
 from core.config import ACCENT, BORDER, PRIMARY, SUBTLE, TEXT_SECONDARY
 from core.utils import cents_to_eur
+from features.invoices import service as invoice_service
 
 from . import repo
 
@@ -323,6 +324,20 @@ def _render_activity_feed() -> None:
 
 def render() -> None:
     render_header("Dashboard", "Überblick — Aufträge · Rechnungen · Lieferungen · Bestellungen")
+
+    # Automatik: Rechnungen mit überschrittener Fälligkeit auf 'overdue' setzen
+    # (einmalig pro Session; günstig dank kleinem Result-Set)
+    if not st.session_state.get("__overdue_check_done"):
+        try:
+            n_overdue = invoice_service.auto_mark_overdue()
+            if n_overdue:
+                st.toast(
+                    f"{n_overdue} Rechnung(en) wegen Fälligkeit auf „Überfällig“ gesetzt",
+                    icon="⚠️",
+                )
+        except Exception:
+            pass
+        st.session_state["__overdue_check_done"] = True
 
     try:
         kpis = repo.get_kpis()

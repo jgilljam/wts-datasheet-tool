@@ -478,6 +478,14 @@ def _render_status_control(d: dict[str, Any]) -> None:
         if booked:
             verb = "eingebucht" if d.get("direction") == "inbound" else "ausgebucht"
             msg += f" — {booked} Position(en) im Lager {verb}."
+        parent_updated = (result or {}).get("parent_updated")
+        if parent_updated:
+            parent_label = {
+                "shipped": "Auftrag → Geliefert",
+                "partial": "Parent → Teilweise erfüllt",
+                "received": "Bestellung → Empfangen",
+            }.get(parent_updated, parent_updated)
+            st.toast(f"📑 Auto-Update: {parent_label}", icon="✓")
         st.success(msg)
         st.rerun()
 
