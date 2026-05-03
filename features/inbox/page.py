@@ -1,24 +1,16 @@
-"""Posteingang — vollwertiger Mail-Client + KI-Pipeline.
+"""Posteingang — Mail-Client + KI-Pipeline.
 
-Layout:
-  Linke Sidebar: Mailbox-Auswahl + Filter
-  Hauptbereich:  Mail-Liste (oben) + Detail (unten, beim Auswählen)
-
-Features:
-  - 3 Mailboxen: sales@ / invoice@ / info@
-  - Lesestatus, Sterne, Suche
-  - HTML-Body sicher gerendert
-  - Antworten-Button öffnet Mail-Modal pre-filled (Versand bleibt User-Klick)
-  - KI-Pipeline auf sales@ + invoice@ (info@ ohne KI)
-  - Auto-Refresh-Toggle
-  - Convert-To-Beleg
+Design-Prinzipien:
+  - **Eine Hauptaktion** pro Mail (Auftrag anlegen / Verknüpfen)
+  - **Filter als Tabs** statt Sidebar — weniger kognitive Last
+  - **KI-Karte prominent** — Roh-JSON nur auf Wunsch
+  - **Body direkt sichtbar** — kein Text/HTML-Toggle
+  - **Sekundäre Aktionen dezent** — Archiv/Ignorieren am Rand
 """
 
 from __future__ import annotations
 
-import html
 import re
-from datetime import datetime
 from typing import Any
 
 import pandas as pd
@@ -35,16 +27,6 @@ from lib import imap_inbox, mail, mail_pipeline, mail_to_beleg
 # Konstanten
 # ============================================================
 
-STATUS_LABELS = {
-    "received": "📨 Eingegangen",
-    "ai_processing": "🤖 KI läuft",
-    "ai_classified": "🤖 KI fertig",
-    "linked": "✅ Verknüpft",
-    "ignored": "🗑 Ignoriert",
-    "failed": "❌ Fehler",
-    "archived": "📁 Archiviert",
-}
-
 CATEGORY_LABELS = {
     "sales_order": "🛒 Kunden-Bestellung",
     "po_acknowledgment": "📑 Auftragsbestätigung",
@@ -54,10 +36,14 @@ CATEGORY_LABELS = {
     None: "—",
 }
 
-MAILBOX_OPTIONS = [
-    ("sales", "🛒 sales@"),
-    ("invoice", "📥 invoice@"),
-    ("info", "ℹ️ info@"),
+# Filter-Presets als Tabs (Reihenfolge = UI-Reihenfolge)
+FILTER_TABS = [
+    ("inbox", "📨 Eingang", {"exclude_status": ["archived", "ignored", "linked"]}),
+    ("unread", "🆕 Ungelesen", {"only_unread": True, "exclude_status": ["archived", "ignored"]}),
+    ("sales", "🛒 Bestellungen", {"category": "sales_order", "exclude_status": ["archived", "ignored"]}),
+    ("invoices", "📥 Rechnungen", {"category": "incoming_invoice", "exclude_status": ["archived", "ignored"]}),
+    ("starred", "⭐ Markiert", {"only_starred": True}),
+    ("archive", "📁 Archiv", {"only_status": "archived"}),
 ]
 
 
@@ -67,22 +53,30 @@ MAILBOX_OPTIONS = [
 
 def _list_mails(
     *,
-    mailboxes: list[str] | None = None,
     only_unread: bool = False,
     only_starred: bool = False,
-    statuses: list[str] | None = None,
+    category: str | None = None,
+    exclude_status: list[str] | None = None,
+    only_status: str | None = None,
     search: str | None = None,
     limit: int = 200,
 ) -> list[dict[str, Any]]:
     q = supabase().table("incoming_mails").select("*")
-    if mailboxes:
-        q = q.in_("mailbox", mailboxes)
     if only_unread:
         q = q.eq("read_status", "unread")
     if only_starred:
         q = q.eq("starred", True)
-    if statuses:
-        q = q.in_("status", statuses)
+    if category:
+        q = q.eq("ai_category", category)
+    if only_status:
+        q = q.eq("status", only_status)
+    if exclude_status:
+        # PostgREST hat kein not.in_, wir filtern in Python falls nötig
+        # → einfacher: Whitelist via in_(["received", "ai_classified", ...])
+        from_status = ["received", "ai_processing", "ai_classified", "linked"]
+        from_status = [s for s in from_status if s not in exclude_status]
+        if from_status:
+            q = q.in_("status", from_status)
     if search:
         s = sanitize_search(search)
         if s:
@@ -92,16 +86,24 @@ def _list_mails(
     return q.order("received_at", desc=True).limit(limit).execute().data or []
 
 
+def _count_mails_per_filter() -> dict[str, int]:
+    """Zählt Mails pro Filter-Tab (für Badge in Tab-Label)."""
+    counts: dict[str, int] = {}
+    for key, _, kwargs in FILTER_TABS:
+        rows = _list_mails(**{**kwargs, "limit": 500})
+        counts[key] = len(rows)
+    return counts
+
+
 def _list_thread(thread_id: str) -> list[dict[str, Any]]:
     if not thread_id:
         return []
     return (
         supabase().table("incoming_mails")
-        .select("id, subject, from_email, received_at, read_status, mailbox")
+        .select("id, subject, from_email, received_at, read_status")
         .eq("thread_id", thread_id)
         .order("received_at", desc=False)
-        .execute()
-        .data
+        .execute().data
     ) or []
 
 
@@ -117,42 +119,27 @@ def _toggle_starred(mail_id: str, current: bool) -> None:
     ).eq("id", mail_id).execute()
 
 
+def _set_status(mail_id: str, status: str) -> None:
+    supabase().table("incoming_mails").update({"status": status}).eq("id", mail_id).execute()
+
+
 # ============================================================
-# Pull-Section
+# Top-Bar: Pull + Auto-Refresh + Suche
 # ============================================================
 
-def _render_pull_section() -> None:
+def _render_topbar() -> None:
     sales_ok = imap_inbox.has_credentials("sales")
     invoice_ok = imap_inbox.has_credentials("invoice")
     info_ok = imap_inbox.has_credentials("info")
-    cfg = mail_pipeline.settings()
 
-    c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
+    c1, c2, c3 = st.columns([3, 1, 1])
     with c1:
-        modes = []
-        if cfg["auto_classify"]:
-            modes.append("🤖 Auto-KI")
-        if cfg["auto_convert"]:
-            modes.append(f"⚡ Auto-Convert (≥{cfg['auto_convert_min_confidence']})")
-        modes_str = " · ".join(modes) or "Nur manuell"
-        st.caption(
-            f"sales@ {'✅' if sales_ok else '⚠️'} · "
-            f"invoice@ {'✅' if invoice_ok else '⚠️'} · "
-            f"info@ {'✅' if info_ok else '⚠️'} · "
-            f"{modes_str}"
+        st.text_input(
+            "🔍",
+            placeholder="Suche in Betreff, Absender, Body …",
+            key="inbox_search",
+            label_visibility="collapsed",
         )
-    with c4:
-        if st.button(
-            "↻ Versand-Status",
-            use_container_width=True,
-            help="Pollt Resend für ausgehende Mails (delivered/bounced/complained).",
-        ):
-            try:
-                with st.spinner("Resend-Status …"):
-                    res = mail.sync_outgoing_status(limit=50)
-                st.toast(f"Versand: {res['updated']}/{res['checked']} aktualisiert", icon="📊")
-            except mail.MailError as e:
-                st.error(f"Sync fehlgeschlagen: {e}")
     with c2:
         if st.button(
             "📥 Mails abrufen",
@@ -160,49 +147,37 @@ def _render_pull_section() -> None:
             use_container_width=True,
             disabled=not (sales_ok or invoice_ok or info_ok),
         ):
-            spinner_label = "IMAP-Pull + KI läuft …" if cfg["auto_classify"] else "IMAP-Pull läuft …"
-            with st.spinner(spinner_label):
+            with st.spinner("IMAP + KI läuft …"):
                 results = imap_inbox.pull_all_mailboxes()
-            converted_count = 0
-            new_total = 0
-            for mb, res in results.items():
-                if "error" in res:
-                    st.error(f"{mb}@: {res['error']}")
-                elif "skipped" in res:
-                    pass
-                else:
-                    new_total += res.get("new", 0)
-                    for pr in res.get("pipeline_results") or []:
-                        if pr.get("auto_convert", {}).get("converted"):
-                            converted_count += 1
+            new_total = sum(
+                r.get("new", 0) for r in results.values() if isinstance(r, dict)
+            )
+            converted = sum(
+                1
+                for r in results.values()
+                if isinstance(r, dict)
+                for pr in (r.get("pipeline_results") or [])
+                if pr.get("auto_convert", {}).get("converted")
+            )
             if new_total:
-                st.toast(f"📥 {new_total} neue Mail{'s' if new_total != 1 else ''}", icon="📬")
+                st.toast(f"📥 {new_total} neue Mail{'s' if new_total != 1 else ''}", icon="✅")
             else:
                 st.toast("Keine neuen Mails", icon="ℹ️")
-            if converted_count:
-                st.toast(f"⚡ {converted_count} Belege auto-converted", icon="✅")
+            if converted:
+                st.toast(f"⚡ {converted} Belege auto-converted", icon="✨")
             st.rerun()
     with c3:
         st.toggle(
-            "⏱ Auto-Refresh (60s)",
+            "⏱ Auto",
             key="inbox_auto_refresh",
-            help="Alle 60 Sekunden automatisch neu pullen.",
+            help="Alle 60 sec automatisch pullen.",
         )
 
-    if not (sales_ok and invoice_ok):
-        with st.popover("ℹ️ Setup-Hinweis"):
-            st.markdown(
-                "Trage in `.streamlit/secrets.toml` ein:\n"
-                "```toml\n"
-                'IMAP_SALES_USER = "sales@wts-trading.de"\n'
-                'IMAP_SALES_PASSWORD = "..."\n'
-                'IMAP_INVOICE_USER = "invoice@wts-trading.de"\n'
-                'IMAP_INVOICE_PASSWORD = "..."\n'
-                '# Optional:\n'
-                'IMAP_INFO_USER = "info@wts-trading.de"\n'
-                'IMAP_INFO_PASSWORD = "..."\n'
-                "```"
-            )
+    if not (sales_ok or invoice_ok):
+        st.info(
+            "ℹ️ IMAP-Login fehlt — trag IMAP_SALES_USER/PASSWORD und "
+            "IMAP_INVOICE_USER/PASSWORD in `.streamlit/secrets.toml` ein."
+        )
 
     if st.session_state.get("inbox_auto_refresh"):
         _auto_pull_fragment()
@@ -223,7 +198,7 @@ def _auto_pull_fragment() -> None:
 
 
 # ============================================================
-# HTML-Body sicher rendern
+# HTML sicher rendern
 # ============================================================
 
 _DANGEROUS_TAGS = re.compile(
@@ -239,7 +214,6 @@ _JS_URL = re.compile(r"javascript\s*:", re.IGNORECASE)
 
 
 def _sanitize_html(raw: str) -> str:
-    """Entfernt Script/Style/iFrame/Event-Handler/javascript:-URLs."""
     if not raw:
         return ""
     s = _DANGEROUS_TAGS.sub("", raw)
@@ -249,65 +223,39 @@ def _sanitize_html(raw: str) -> str:
     return s
 
 
+def _html_to_text(html: str) -> str:
+    if not html:
+        return ""
+    return re.sub(r"<[^>]+>", "", _sanitize_html(html))
+
+
 # ============================================================
-# Mail-Liste
+# Mail-Liste (kompakt)
 # ============================================================
 
-def _render_filter_sidebar() -> dict[str, Any]:
-    with st.sidebar:
-        st.markdown("### 📬 Posteingang")
+def _render_filter_tabs() -> dict[str, Any]:
+    """Filter-Tabs mit Counts. Returns die aktiven Filter-kwargs."""
+    counts = _count_mails_per_filter()
+    labels = [f"{label} ({counts.get(key, 0)})" for key, label, _ in FILTER_TABS]
+    keys = [k for k, _, _ in FILTER_TABS]
 
-        # Mailbox-Auswahl als Pills
-        mailbox_keys = [k for k, _ in MAILBOX_OPTIONS]
-        mailbox_labels = {k: label for k, label in MAILBOX_OPTIONS}
-        selected_mailboxes = st.multiselect(
-            "Postfach",
-            options=mailbox_keys,
-            default=st.session_state.get("inbox_filter_mailboxes", ["sales", "invoice"]),
-            format_func=lambda k: mailbox_labels[k],
-            key="inbox_filter_mailboxes",
-        )
-
-        st.divider()
-        st.markdown("**Filter**")
-        only_unread = st.checkbox("Nur ungelesen", key="inbox_filter_unread")
-        only_starred = st.checkbox("Nur ⭐ markiert", key="inbox_filter_starred")
-
-        st.markdown("**Pipeline-Status**")
-        statuses = st.multiselect(
-            "Status",
-            options=list(STATUS_LABELS.keys()),
-            default=st.session_state.get("inbox_filter_statuses", []),
-            format_func=lambda s: STATUS_LABELS.get(s, s),
-            key="inbox_filter_statuses",
-            label_visibility="collapsed",
-        )
-
-        st.divider()
-        search = st.text_input(
-            "🔍 Suche", key="inbox_search",
-            placeholder="Betreff, Absender, Body …",
-        )
-
-    return {
-        "mailboxes": selected_mailboxes,
-        "only_unread": only_unread,
-        "only_starred": only_starred,
-        "statuses": statuses,
-        "search": search,
-    }
-
-
-def _render_mail_list(filters: dict[str, Any]) -> str | None:
-    rows = _list_mails(
-        mailboxes=filters["mailboxes"] or None,
-        only_unread=filters["only_unread"],
-        only_starred=filters["only_starred"],
-        statuses=filters["statuses"] or None,
-        search=filters["search"] or None,
+    chosen = st.radio(
+        "Filter",
+        options=keys,
+        format_func=lambda k: labels[keys.index(k)],
+        horizontal=True,
+        label_visibility="collapsed",
+        key="inbox_active_filter",
     )
+    kwargs = next((kw for k, _, kw in FILTER_TABS if k == chosen), {})
+    kwargs["search"] = st.session_state.get("inbox_search") or None
+    return kwargs
+
+
+def _render_mail_list(filter_kwargs: dict[str, Any]) -> str | None:
+    rows = _list_mails(**filter_kwargs)
     if not rows:
-        st.info("Keine Mails passend zum Filter.")
+        st.info("📭 Keine Mails in diesem Filter.")
         return None
 
     df_data = []
@@ -316,32 +264,35 @@ def _render_mail_list(filters: dict[str, Any]) -> str | None:
         unread = r.get("read_status") == "unread"
         starred = r.get("starred")
         cat = r.get("ai_category")
+        marker = ("⭐ " if starred else "") + ("🆕 " if unread else "")
+        from_disp = (r.get("from_name") or r.get("from_email") or "?")[:32]
+        subject = r.get("subject") or "(kein Betreff)"
         df_data.append({
-            "_id": r["id"],
-            "": ("⭐" if starred else "") + ("🆕" if unread else ""),
-            "Eingang": format_date(r.get("received_at")) or "—",
-            "Postfach": next((label for k, label in MAILBOX_OPTIONS if k == r.get("mailbox")), r.get("mailbox") or ""),
-            "Von": (r.get("from_name") or r.get("from_email") or "?")[:35],
-            "Betreff": (r.get("subject") or "(kein Betreff)")[:70],
+            "": marker.strip(),
+            "Von": from_disp,
+            "Betreff": subject[:65],
+            "Datum": format_date(r.get("received_at")) or "—",
+            "Kategorie": CATEGORY_LABELS.get(cat, "—"),
             "📎": len(atts) if atts else "",
-            "Kategorie": CATEGORY_LABELS.get(cat, cat or "—"),
-            "Status": STATUS_LABELS.get(r.get("status"), r.get("status") or ""),
         })
-    df = pd.DataFrame(df_data).drop(columns=["_id"])
+    df = pd.DataFrame(df_data)
     sel = st.dataframe(
-        df, use_container_width=True, hide_index=True,
-        on_select="rerun", selection_mode="single-row",
+        df,
+        use_container_width=True,
+        hide_index=True,
+        on_select="rerun",
+        selection_mode="single-row",
         key="inbox_table",
     )
     sel_idx = sel.get("selection", {}).get("rows", [])
     if not sel_idx:
-        st.caption(f"{len(rows)} Mails — wähle eine Zeile für Details.")
+        st.caption(f"💡 {len(rows)} Mail{'s' if len(rows) != 1 else ''} — wähle eine Zeile für Details.")
         return None
     return rows[sel_idx[0]]["id"]
 
 
 # ============================================================
-# Detail-View
+# Detail — fokussiert auf Hauptaktion
 # ============================================================
 
 def _render_detail(mail_id: str) -> None:
@@ -352,90 +303,58 @@ def _render_detail(mail_id: str) -> None:
         st.error("Mail nicht gefunden.")
         return
 
-    # Beim Öffnen automatisch als gelesen markieren
     if mail_row.get("read_status") == "unread":
         _mark_read(mail_id, True)
         mail_row["read_status"] = "read"
 
-    # Toolbar: Stern, Antworten, Archiv, Ignorieren, KI
-    tb1, tb2, tb3, tb4, tb5, tb6 = st.columns([1, 1, 1, 1, 1, 2])
+    # Header — Subject + dezente Meta-Zeile
+    st.markdown(f"## {mail_row.get('subject') or '(kein Betreff)'}")
+    received = format_date(mail_row.get("received_at")) or "—"
+    from_disp = mail_row.get("from_name") or mail_row.get("from_email") or "?"
+    from_email = mail_row.get("from_email") or ""
     starred = bool(mail_row.get("starred"))
-    if tb1.button("⭐" if starred else "☆", help="Stern", key=f"star_{mail_id}", use_container_width=True):
+    star_icon = "⭐" if starred else "☆"
+
+    h1, h2 = st.columns([5, 1])
+    h1.caption(f"**{from_disp}** `<{from_email}>` · {received} · an `{mail_row.get('to_email')}`")
+    if h2.button(f"{star_icon} Markieren", key=f"star_{mail_id}", use_container_width=True):
         _toggle_starred(mail_id, starred)
         st.rerun()
-    if tb2.button("↩️ Antworten", help="Antwort vorbereiten", key=f"reply_{mail_id}", use_container_width=True):
-        st.session_state[f"reply_open_{mail_id}"] = True
-    if tb3.button("🤖 KI", help="Klassifikation/Extraktion", key=f"ai_{mail_id}", use_container_width=True):
-        with st.spinner("Gemini …"):
-            _run_ai_classification(mail_row)
-        st.rerun()
-    if tb4.button("📁 Archiv", help="Archivieren", key=f"arch_{mail_id}", use_container_width=True):
-        supabase().table("incoming_mails").update({"status": "archived"}).eq("id", mail_id).execute()
-        st.rerun()
-    if tb5.button("🗑 Ignorieren", help="Als ignoriert markieren", key=f"ign_{mail_id}", use_container_width=True):
-        supabase().table("incoming_mails").update({"status": "ignored"}).eq("id", mail_id).execute()
-        st.rerun()
 
-    # Header
-    st.markdown(f"### {mail_row.get('subject') or '(kein Betreff)'}")
-    meta1, meta2, meta3 = st.columns(3)
-    meta1.markdown(f"**Von:** `{mail_row.get('from_name') or ''} <{mail_row.get('from_email')}>`")
-    meta2.markdown(f"**An:** `{mail_row.get('to_email')}`")
-    meta3.markdown(f"**Eingang:** {format_date(mail_row.get('received_at')) or '—'}")
+    st.divider()
 
-    cat = mail_row.get("ai_category")
-    pill_text = (
-        f"**Status:** {STATUS_LABELS.get(mail_row.get('status'), mail_row.get('status'))} · "
-        f"**Kategorie:** {CATEGORY_LABELS.get(cat, cat or '—')}"
-    )
-    if mail_row.get("ai_confidence"):
-        pill_text += f" · KI: `{mail_row['ai_confidence']}`"
-    st.caption(pill_text)
+    # === KI-Karte (oberste Priorität wenn klassifiziert) ===
+    if mail_row.get("ai_extracted_payload"):
+        _render_ai_card(mail_row)
+    elif mail_row.get("status") in ("received", "failed"):
+        # KI noch nicht gelaufen — Button zum Triggern
+        cc1, cc2 = st.columns([3, 1])
+        cc1.caption("🤖 Noch nicht von der KI analysiert.")
+        if cc2.button("KI starten", type="primary", use_container_width=True, key=f"start_ai_{mail_id}"):
+            with st.spinner("Gemini …"):
+                _trigger_ai(mail_row)
+            st.rerun()
 
-    # Thread-Anzeige (wenn mehr als eine Mail im Thread)
-    thread = _list_thread(mail_row.get("thread_id") or "")
-    if len(thread) > 1:
-        with st.expander(f"🧵 Thread ({len(thread)} Nachrichten)", expanded=False):
-            for t in thread:
-                marker = "▶ " if t["id"] == mail_id else "   "
-                date = format_date(t.get("received_at")) or ""
-                st.caption(f"{marker}{date} · {t.get('from_email', '?')} · {(t.get('subject') or '')[:60]}")
+    if mail_row.get("ai_error"):
+        st.error(f"KI-Fehler: {mail_row['ai_error']}")
 
-    # Antworten-Form (inline)
-    if st.session_state.get(f"reply_open_{mail_id}"):
-        _render_reply_form(mail_row)
+    st.divider()
 
-    # Body + Anhänge
-    body_col, side_col = st.columns([3, 2])
-
-    with body_col:
-        st.markdown("#### Inhalt")
-        view_mode = st.radio(
-            "Ansicht",
-            ["📝 Text", "🌐 HTML"],
-            horizontal=True,
+    # === Inhalt + Anhänge nebeneinander ===
+    c_body, c_side = st.columns([3, 2])
+    with c_body:
+        st.markdown("#### 📄 Inhalt")
+        body = mail_row.get("body_text") or _html_to_text(mail_row.get("body_html") or "")
+        st.text_area(
+            "body",
+            value=body or "(leer)",
+            height=320,
             label_visibility="collapsed",
-            key=f"view_{mail_id}",
-            index=1 if mail_row.get("body_html") else 0,
+            disabled=True,
+            key=f"body_{mail_id}",
         )
-        if view_mode == "🌐 HTML" and mail_row.get("body_html"):
-            sanitized = _sanitize_html(mail_row["body_html"])
-            st.components.v1.html(sanitized, height=500, scrolling=True)
-        else:
-            text = mail_row.get("body_text") or ""
-            if not text and mail_row.get("body_html"):
-                # HTML zu Text fallback
-                text = re.sub(r"<[^>]+>", "", _sanitize_html(mail_row["body_html"]))
-            st.text_area(
-                "body_view",
-                value=text or "(kein Inhalt)",
-                height=500,
-                label_visibility="collapsed",
-                disabled=True,
-                key=f"body_{mail_id}",
-            )
 
-    with side_col:
+    with c_side:
         atts = mail_row.get("attachments_meta") or []
         st.markdown(f"#### 📎 Anhänge ({len(atts)})")
         if not atts:
@@ -447,7 +366,7 @@ def _render_detail(mail_id: str) -> None:
                 st.caption(f"{att.get('content_type', '?')} · {size_kb} KB")
                 if att.get("storage_path"):
                     if st.button(
-                        "⬇ Laden",
+                        "⬇ Download",
                         key=f"loadatt_{mail_id}_{att['storage_path']}",
                         use_container_width=True,
                     ):
@@ -465,67 +384,238 @@ def _render_detail(mail_id: str) -> None:
                             use_container_width=True,
                         )
 
-        # KI-Ergebnis + Convert
-        if mail_row.get("ai_extracted_payload"):
-            st.markdown("#### 🤖 KI-Extraktion")
+    # === Thread (wenn Replies vorhanden) ===
+    thread = _list_thread(mail_row.get("thread_id") or "")
+    if len(thread) > 1:
+        with st.expander(f"🧵 Thread mit {len(thread)} Nachrichten", expanded=False):
+            for t in thread:
+                marker = "▶ " if t["id"] == mail_id else "  "
+                date = format_date(t.get("received_at")) or ""
+                st.caption(f"{marker}{date} · {t.get('from_email', '?')} · {(t.get('subject') or '')[:60]}")
 
-            # Konfidenz-Banner
-            conf = mail_row.get("ai_confidence") or ""
-            if conf == "low":
-                st.error("⚠️ KI-Konfidenz **niedrig** — bitte alle Felder vor dem Anlegen prüfen.")
-            elif conf == "medium":
-                st.warning("⚠️ KI-Konfidenz **mittel** — empfohlen: Items + Preise checken.")
+    st.divider()
 
-            # Validation-Warnings
-            payload = mail_row.get("ai_extracted_payload") or {}
-            warnings = payload.get("validation_warnings") or []
-            if warnings:
-                with st.expander(f"⚠️ {len(warnings)} Plausibilitäts-Warnung(en)", expanded=True):
-                    for w in warnings:
-                        msg = w.get("msg") or w.get("type") or "?"
-                        if w.get("type") == "price_mismatch":
-                            st.warning(f"💰 {msg}")
-                        else:
-                            st.info(f"ℹ️ {msg}")
+    # === Sekundäre Aktionen (dezent) ===
+    a1, a2, a3, a4 = st.columns(4)
+    if a1.button("↩️ Antworten", use_container_width=True, key=f"reply_{mail_id}"):
+        st.session_state[f"reply_open_{mail_id}"] = True
+    if a2.button("🤖 Neu analysieren", use_container_width=True, key=f"reai_{mail_id}", help="KI nochmal laufen lassen"):
+        with st.spinner("Gemini …"):
+            _trigger_ai(mail_row)
+        st.rerun()
+    if a3.button("📁 Archivieren", use_container_width=True, key=f"arch_{mail_id}"):
+        _set_status(mail_id, "archived")
+        st.rerun()
+    if a4.button("🗑 Ignorieren", use_container_width=True, key=f"ign_{mail_id}"):
+        _set_status(mail_id, "ignored")
+        st.rerun()
 
-            with st.expander("Roh-JSON", expanded=False):
-                st.json(payload)
-
-            if mail_row.get("linked_beleg_id"):
-                bt = mail_row.get("linked_beleg_type")
-                bid = mail_row["linked_beleg_id"][:8]
-                st.success(f"✅ Verknüpft: {bt} `{bid}…`")
-            else:
-                _render_convert_buttons(mail_row)
-
-        if mail_row.get("ai_error"):
-            st.error(f"KI-Fehler: {mail_row['ai_error']}")
+    if st.session_state.get(f"reply_open_{mail_id}"):
+        _render_reply_form(mail_row)
 
 
 # ============================================================
-# Antworten-Form (Versand strikt per Knopf)
+# KI-Karte — die WICHTIGSTE UI, prominent
+# ============================================================
+
+def _render_ai_card(mail_row: dict[str, Any]) -> None:
+    payload = mail_row.get("ai_extracted_payload") or {}
+    cat = mail_row.get("ai_category")
+    conf = mail_row.get("ai_confidence") or "medium"
+
+    # Bei verlinktem Beleg: kompakte Erfolgs-Karte
+    if mail_row.get("linked_beleg_id"):
+        bt = mail_row.get("linked_beleg_type") or "?"
+        bid = mail_row["linked_beleg_id"]
+        st.success(
+            f"✅ **Verknüpft mit {bt.replace('_', ' ').title()}** · `{bid[:8]}…` "
+            f"(KI: {CATEGORY_LABELS.get(cat, cat)} / {conf})"
+        )
+        return
+
+    with st.container(border=True):
+        # Confidence-Badge
+        conf_emoji = {"high": "🟢", "medium": "🟡", "low": "🔴"}.get(conf, "⚪")
+        st.markdown(
+            f"#### 🤖 KI-Analyse · {CATEGORY_LABELS.get(cat, '—')} "
+            f"· {conf_emoji} {conf.title()}-Konfidenz"
+        )
+
+        if cat == "sales_order":
+            _render_sales_order_card(mail_row, payload)
+        elif cat == "incoming_invoice":
+            _render_invoice_card(mail_row, payload)
+        elif cat == "po_acknowledgment":
+            _render_po_ack_card(mail_row)
+        elif cat == "reply":
+            st.caption("↩️ Antwort auf eine unserer Mails — keine Auto-Aktion.")
+        else:
+            st.caption("❓ Sonstige Mail — keine Auto-Aktion.")
+
+        # Validation-Warnings
+        warnings = payload.get("validation_warnings") or []
+        if warnings:
+            with st.expander(f"⚠️ {len(warnings)} Hinweis(e)", expanded=conf != "high"):
+                for w in warnings:
+                    st.warning(w.get("msg") or w.get("type") or "?")
+
+        # Roh-JSON nur für Debug-Power-User
+        with st.expander("🔍 Roh-Daten (Debug)", expanded=False):
+            st.json(payload)
+
+
+def _render_sales_order_card(mail_row: dict[str, Any], payload: dict[str, Any]) -> None:
+    so = payload.get("sales_order")
+    if not so:
+        st.warning("Keine strukturierten Bestelldaten — bitte erneut analysieren.")
+        return
+
+    items = so.get("items") or []
+    customer = so.get("customer_name") or "?"
+    cust_ref = so.get("customer_reference")
+    requested = so.get("requested_delivery_date")
+
+    # Prominente Zusammenfassung
+    cols = st.columns(3)
+    cols[0].metric("Kunde", customer[:30])
+    cols[1].metric("Positionen", len(items))
+    if requested:
+        cols[2].metric("Wunschtermin", requested)
+
+    # Items kompakt
+    if items:
+        items_df = pd.DataFrame([
+            {
+                "Pos": it.get("pos_nr", "?"),
+                "SKU": it.get("sku") or "—",
+                "Bezeichnung": (it.get("description") or "")[:50],
+                "Menge": f"{it.get('qty', 0)} {it.get('unit', 'Stk')}",
+                "Preis": f"{(it.get('target_price_eur') or 0):.2f} €",
+            }
+            for it in items
+        ])
+        st.dataframe(items_df, use_container_width=True, hide_index=True)
+
+    if cust_ref:
+        st.caption(f"Kunden-Bestell-Nr: `{cust_ref}`")
+
+    actor = (st.session_state.get("user") or {}).get("email")
+    if st.button(
+        "→ Auftrag (Draft) anlegen",
+        type="primary",
+        use_container_width=True,
+        key=f"toorder_{mail_row['id']}",
+    ):
+        try:
+            with st.spinner("Auftrag wird angelegt …"):
+                order_id = mail_to_beleg.convert_mail_to_order(
+                    mail_id=mail_row["id"],
+                    sales_order_payload=so,
+                    mail_from_email=mail_row.get("from_email") or "",
+                    actor_email=actor,
+                )
+            st.success(f"✓ Auftrag-Draft angelegt: `{order_id[:8]}…`")
+            st.rerun()
+        except Exception as e:
+            st.error(f"Fehler: {e}")
+
+
+def _render_invoice_card(mail_row: dict[str, Any], payload: dict[str, Any]) -> None:
+    ii = payload.get("incoming_invoice")
+    if not ii:
+        st.warning("Keine OCR-Daten — bitte erneut analysieren.")
+        return
+
+    items = ii.get("items") or []
+
+    cols = st.columns(3)
+    cols[0].metric("Lieferant", (ii.get("supplier_name") or "?")[:25])
+    cols[1].metric("Brutto", f"{(ii.get('gross_total_eur') or 0):.2f} €")
+    cols[2].metric("Positionen", len(items))
+
+    rg = ii.get("invoice_number")
+    dt = ii.get("invoice_date")
+    if rg:
+        st.caption(f"Rechnung: `{rg}` · Datum: {dt}")
+
+    actor = (st.session_state.get("user") or {}).get("email")
+    if st.button(
+        "→ Eingangsrechnung anlegen",
+        type="primary",
+        use_container_width=True,
+        key=f"toinv_{mail_row['id']}",
+    ):
+        try:
+            atts = mail_row.get("attachments_meta") or []
+            pdf_bytes = pdf_filename = None
+            primary_idx = (payload.get("classification") or {}).get("primary_attachment_index", -1)
+            for i, att in enumerate(atts):
+                if (att.get("content_type") or "").lower() != "application/pdf":
+                    continue
+                if 0 <= primary_idx and i != primary_idx:
+                    continue
+                try:
+                    pdf_bytes = supabase().storage.from_(imap_inbox.ATTACHMENTS_BUCKET).download(att["storage_path"])
+                    pdf_filename = att.get("filename")
+                    break
+                except Exception:
+                    continue
+            with st.spinner("Eingangsrechnung wird angelegt …"):
+                inv_id = mail_to_beleg.convert_mail_to_incoming_invoice(
+                    mail_id=mail_row["id"],
+                    parsed_invoice=ii,
+                    pdf_bytes=pdf_bytes,
+                    pdf_filename=pdf_filename,
+                    actor_email=actor,
+                )
+            st.success(f"✓ Eingangsrechnung: `{inv_id[:8]}…`")
+            st.rerun()
+        except Exception as e:
+            st.error(f"Fehler: {e}")
+
+
+def _render_po_ack_card(mail_row: dict[str, Any]) -> None:
+    st.caption("Lieferant bestätigt eine unserer Bestellungen.")
+    actor = (st.session_state.get("user") or {}).get("email")
+    if st.button(
+        "🔗 Mit unserer Bestellung verknüpfen",
+        type="primary",
+        use_container_width=True,
+        key=f"linkpo_{mail_row['id']}",
+    ):
+        try:
+            with st.spinner("BE-Nr wird gesucht …"):
+                res = mail_to_beleg.link_po_acknowledgment(
+                    mail_id=mail_row["id"],
+                    actor_email=actor,
+                )
+            if res.get("linked"):
+                st.success(f"✓ Verknüpft mit PO **{res['po_number']}**")
+                st.rerun()
+            else:
+                st.warning(f"Kein Match: {res.get('reason')}")
+        except Exception as e:
+            st.error(f"Fehler: {e}")
+
+
+# ============================================================
+# Reply-Form
 # ============================================================
 
 def _render_reply_form(mail_row: dict[str, Any]) -> None:
-    """Inline-Antwort-Komposer. Versand öffnet das normale Mail-Modal (User klickt Senden)."""
     mail_id = mail_row["id"]
     with st.container(border=True):
-        st.markdown("#### ↩️ Antworten")
+        st.markdown("### ↩️ Antworten")
         to_default = mail_row.get("reply_to") or mail_row.get("from_email") or ""
         subj_default = mail_row.get("subject") or ""
         if not subj_default.lower().startswith("re:"):
             subj_default = f"Re: {subj_default}"
 
-        # Zitat des Original-Bodies
-        orig_body = mail_row.get("body_text") or ""
-        if not orig_body and mail_row.get("body_html"):
-            orig_body = re.sub(r"<[^>]+>", "", _sanitize_html(mail_row["body_html"]))
+        orig_body = mail_row.get("body_text") or _html_to_text(mail_row.get("body_html") or "")
         sent_date = format_date(mail_row.get("date_sent") or mail_row.get("received_at")) or ""
         from_disp = mail_row.get("from_email") or "?"
         quote = "\n\n".join("> " + ln for ln in orig_body.splitlines() if ln.strip())[:2000]
-        body_default = (
-            f"\n\nAm {sent_date} schrieb {from_disp}:\n\n{quote}"
-        )
+        body_default = f"\n\nAm {sent_date} schrieb {from_disp}:\n\n{quote}"
 
         with st.form(f"reply_form_{mail_id}"):
             to = st.text_input("An", value=to_default, key=f"reply_to_{mail_id}")
@@ -563,126 +653,16 @@ def _render_reply_form(mail_row: dict[str, Any]) -> None:
                 st.error(f"Versand fehlgeschlagen: {e}")
 
 
-# ============================================================
-# KI-Klassifikation (delegiert an Pipeline)
-# ============================================================
-
-def _run_ai_classification(mail_row: dict[str, Any]) -> None:
+def _trigger_ai(mail_row: dict[str, Any]) -> None:
     try:
         result = mail_pipeline.classify_and_extract(mail_row["id"])
     except Exception as e:
         st.error(f"KI-Fehler: {e}")
         return
-    if result.get("status") == "failed":
+    if result and result.get("status") == "failed":
         st.error(f"KI-Fehler: {result.get('ai_error') or 'unbekannt'}")
     else:
-        st.success(f"KI-Analyse fertig: {result.get('ai_category')} ({result.get('ai_confidence')})")
-
-
-# ============================================================
-# Convert-Buttons (unverändert)
-# ============================================================
-
-def _render_convert_buttons(mail_row: dict[str, Any]) -> None:
-    cat = mail_row.get("ai_category")
-    payload = mail_row.get("ai_extracted_payload") or {}
-    actor = (st.session_state.get("user") or {}).get("email")
-
-    if cat == "sales_order":
-        so = payload.get("sales_order")
-        if not so:
-            st.warning("Keine Sales-Order-Daten — KI erneut analysieren.")
-            return
-        items = so.get("items") or []
-        st.caption(
-            f"**Kunde:** {html.escape(str(so.get('customer_name') or '?'))} · "
-            f"**Items:** {len(items)} · "
-            f"**Konfidenz:** {so.get('confidence', '?')}"
-        )
-        if so.get("requested_delivery_date"):
-            st.caption(f"**Wunsch-Liefertermin:** {so['requested_delivery_date']}")
-        if st.button(
-            "→ Auftrag (Draft) anlegen", type="primary",
-            use_container_width=True, key=f"toorder_{mail_row['id']}",
-        ):
-            try:
-                with st.spinner("Auftrag wird angelegt …"):
-                    order_id = mail_to_beleg.convert_mail_to_order(
-                        mail_id=mail_row["id"],
-                        sales_order_payload=so,
-                        mail_from_email=mail_row.get("from_email") or "",
-                        actor_email=actor,
-                    )
-                st.success(f"✓ Auftrag-Draft: `{order_id[:8]}…`")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Fehler: {e}")
-
-    elif cat == "incoming_invoice":
-        ii = payload.get("incoming_invoice")
-        if not ii:
-            st.warning("Keine OCR-Daten — KI erneut analysieren.")
-            return
-        items = ii.get("items") or []
-        st.caption(
-            f"**Lieferant:** {html.escape(str(ii.get('supplier_name') or '?'))} · "
-            f"**Rg-Nr:** {ii.get('invoice_number', '?')} · "
-            f"**Brutto:** {ii.get('gross_total_eur', 0):.2f} € · "
-            f"**Items:** {len(items)} · "
-            f"**Konfidenz:** {ii.get('confidence', '?')}"
-        )
-        if st.button(
-            "→ Eingangsrechnung anlegen", type="primary",
-            use_container_width=True, key=f"toinv_{mail_row['id']}",
-        ):
-            try:
-                atts = mail_row.get("attachments_meta") or []
-                pdf_bytes = pdf_filename = None
-                for att in atts:
-                    if (att.get("content_type") or "").lower() == "application/pdf":
-                        try:
-                            pdf_bytes = supabase().storage.from_(imap_inbox.ATTACHMENTS_BUCKET).download(att["storage_path"])
-                            pdf_filename = att.get("filename")
-                            break
-                        except Exception:
-                            continue
-                with st.spinner("Eingangsrechnung wird angelegt …"):
-                    inv_id = mail_to_beleg.convert_mail_to_incoming_invoice(
-                        mail_id=mail_row["id"],
-                        parsed_invoice=ii,
-                        pdf_bytes=pdf_bytes,
-                        pdf_filename=pdf_filename,
-                        actor_email=actor,
-                    )
-                st.success(f"✓ Eingangsrechnung: `{inv_id[:8]}…`")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Fehler: {e}")
-
-    elif cat == "po_acknowledgment":
-        st.caption("Auftragsbestätigung vom Lieferanten — wir suchen die zugehörige BE-Nr.")
-        if st.button(
-            "🔗 Mit unserer Bestellung verknüpfen",
-            type="primary",
-            use_container_width=True,
-            key=f"linkpo_{mail_row['id']}",
-        ):
-            try:
-                with st.spinner("BE-Nr wird gesucht …"):
-                    res = mail_to_beleg.link_po_acknowledgment(
-                        mail_id=mail_row["id"],
-                        actor_email=actor,
-                    )
-                if res.get("linked"):
-                    st.success(f"✓ Verknüpft mit PO **{res['po_number']}**")
-                    st.rerun()
-                else:
-                    st.warning(f"Kein Match: {res.get('reason')}")
-            except Exception as e:
-                st.error(f"Fehler: {e}")
-
-    else:
-        st.caption("Keine Convert-Aktion für diese Kategorie.")
+        st.toast("KI fertig", icon="✅")
 
 
 # ============================================================
@@ -692,14 +672,14 @@ def _render_convert_buttons(mail_row: dict[str, Any]) -> None:
 def render() -> None:
     render_header(
         title="Posteingang",
-        subtitle="Mail-Client + KI-Klassifikation für sales@ / invoice@ / info@.",
+        subtitle="Mails aus sales@ + invoice@ + info@ — KI klassifiziert automatisch.",
     )
 
-    _render_pull_section()
+    _render_topbar()
     st.divider()
 
-    filters = _render_filter_sidebar()
-    selected_id = _render_mail_list(filters)
+    filter_kwargs = _render_filter_tabs()
+    selected_id = _render_mail_list(filter_kwargs)
     if selected_id:
         st.divider()
         _render_detail(selected_id)
