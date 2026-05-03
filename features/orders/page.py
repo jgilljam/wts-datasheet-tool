@@ -10,6 +10,7 @@ import streamlit as st
 
 from core.branding import render_footer, render_header
 from core.db import supabase
+from core.ui.address_picker import render_address_picker
 from core.ui.kpi import render_kpis
 from core.ui.status import render_status_pill, render_status_stepper
 from core.utils import cents_to_eur, eur_to_cents, format_date, parse_date
@@ -180,6 +181,17 @@ def _render_create_tab() -> None:
                 st.success(f"'{new_name}' angelegt — bitte oben auswählen.")
                 st.rerun()
 
+    # Adress-Picker außerhalb der Form (Streamlit reagiert sonst nicht auf Party-Wechsel)
+    real_party_id = party_id if party_id != NEW_PARTY_SENTINEL else None
+    shipping_addr_id = render_address_picker(
+        real_party_id, "new_order_ship", "Lieferadresse",
+        kinds=["shipping", "registered"],
+    )
+    billing_addr_id = render_address_picker(
+        real_party_id, "new_order_bill", "Rechnungsadresse",
+        kinds=["billing", "registered"],
+    )
+
     with st.form("create_order", clear_on_submit=True):
         c1, c2 = st.columns(2)
         ordered_at = c1.date_input("Auftragsdatum", value=date.today(), key="new_order_ordered_at")
@@ -222,6 +234,10 @@ def _render_create_tab() -> None:
             }
             if customer_reference.strip():
                 payload["customer_reference"] = customer_reference.strip()
+            if shipping_addr_id:
+                payload["shipping_address_id"] = shipping_addr_id
+            if billing_addr_id:
+                payload["billing_address_id"] = billing_addr_id
             if incoterms != "—":
                 payload["incoterms"] = incoterms
             if incoterms_place.strip():
@@ -291,23 +307,25 @@ def _render_action_buttons(o: dict[str, Any]) -> None:
     order_id = o["id"]
     cur = o.get("status") or "draft"
 
-    if cur in ORDER_TERMINAL or cur == "done":
+    if cur in ORDER_TERMINAL:
         st.caption(f"Auftrag im Endstatus: **{ORDER_STATUS_LABELS.get(cur, cur)}**.")
         return
 
     next_action = ORDER_NEXT_ACTION.get(cur)
-    if not next_action:
-        return
 
-    next_status, label = next_action
+    c1, c2, c3, c4 = st.columns([3, 2, 2, 2])
 
-    c1, c2, c3 = st.columns([3, 2, 2])
-    primary = c1.button(
-        label,
-        key=f"action_primary_{order_id}",
-        type="primary",
-        use_container_width=True,
-    )
+    primary = False
+    if next_action:
+        next_status, label = next_action
+        primary = c1.button(
+            label,
+            key=f"action_primary_{order_id}",
+            type="primary",
+            use_container_width=True,
+        )
+    else:
+        c1.caption(f"Status: **{ORDER_STATUS_LABELS.get(cur, cur)}**")
 
     create_delivery_btn = False
     if cur in ("confirmed", "in_production", "partial"):
@@ -318,9 +336,18 @@ def _render_action_buttons(o: dict[str, Any]) -> None:
             help="Erzeugt eine outbound-Lieferung mit den Auftragspositionen",
         )
 
+    create_invoice_btn = False
+    if cur in ("partial", "shipped", "done"):
+        create_invoice_btn = c3.button(
+            "📄 Rechnung erstellen",
+            key=f"action_invoice_{order_id}",
+            use_container_width=True,
+            help="Erzeugt einen Rechnungsentwurf mit den noch nicht fakturierten Mengen",
+        )
+
     cancel_btn = False
     if cur not in ("done", "cancelled"):
-        cancel_btn = c3.button(
+        cancel_btn = c4.button(
             "✕ Stornieren",
             key=f"action_cancel_{order_id}",
             use_container_width=True,
@@ -356,6 +383,20 @@ def _render_action_buttons(o: dict[str, Any]) -> None:
                 pass
         st.rerun()
 
+    if create_invoice_btn:
+        try:
+            from features.invoices import service as invoice_service
+            invoice_id = invoice_service.create_invoice_from_order(order_id, mode="complete")
+        except Exception as exc:
+            st.error(f"Rechnung konnte nicht erzeugt werden: {exc}")
+            return
+        st.success(
+            f"Rechnungsentwurf angelegt (`{invoice_id[:8]}…`). "
+            "Wechsle zur **Rechnungen**-Page → Detail, um Leistungsdatum zu prüfen "
+            "und festzuschreiben."
+        )
+        st.rerun()
+
     if cancel_btn:
         try:
             service.update_status(order_id, "cancelled")
@@ -367,21 +408,41 @@ def _render_action_buttons(o: dict[str, Any]) -> None:
 
 
 def _render_smart_buttons(o: dict[str, Any]) -> None:
-    """Counter-Buttons zu verknüpften Belegen (Lieferungen)."""
+    """Counter-Buttons zu verknüpften Belegen (Lieferungen + Rechnungen)."""
+    from features.invoices import repo as invoice_repo
+    from features.invoices.constants import INVOICE_STATUS_LABELS
+
     deliveries = repo.list_deliveries_for_order(o["id"])
-    if not deliveries:
-        st.caption("📦 Keine Lieferungen verknüpft.")
+    invoices = invoice_repo.list_invoices_for_order(o["id"])
+
+    if not deliveries and not invoices:
+        st.caption("📦 Keine Lieferungen oder Rechnungen verknüpft.")
         return
 
-    st.markdown("**Verknüpfte Lieferungen**")
-    rows: list[dict[str, Any]] = []
-    for d in deliveries:
-        rows.append({
-            "Nr.": d.get("delivery_number") or "—",
-            "Status": DELIVERY_STATUS_LABELS.get(d.get("status"), d.get("status") or ""),
-            "Termin": format_date(d.get("expected_at")),
-        })
-    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    if deliveries:
+        st.markdown("**Verknüpfte Lieferungen**")
+        rows: list[dict[str, Any]] = []
+        for d in deliveries:
+            rows.append({
+                "Nr.": d.get("delivery_number") or "—",
+                "Status": DELIVERY_STATUS_LABELS.get(d.get("status"), d.get("status") or ""),
+                "Termin": format_date(d.get("expected_at")),
+            })
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+    if invoices:
+        st.markdown("**Verknüpfte Rechnungen**")
+        rows = []
+        for i in invoices:
+            brutto = int(i.get("total_net_cents") or 0) + int(i.get("tax_total_cents") or 0)
+            rows.append({
+                "Nr.": i.get("invoice_number") or "Entwurf",
+                "Status": INVOICE_STATUS_LABELS.get(i.get("status"), i.get("status") or ""),
+                "Datum": format_date(i.get("issued_at")),
+                "Brutto": cents_to_eur(brutto),
+                "Storno?": "✓" if i.get("reverses_id") else "",
+            })
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
 
 def _render_items_editor(o: dict[str, Any]) -> None:
@@ -523,9 +584,10 @@ def _render_items_editor(o: dict[str, Any]) -> None:
 
 def _render_history(o: dict[str, Any]) -> None:
     events = repo.list_order_events(o["id"], limit=50)
-    if not events:
-        return
     with st.expander(f"🕒 Verlauf ({len(events)})", expanded=False):
+        if not events:
+            st.caption("Keine Ereignisse aufgezeichnet.")
+            return
         for e in events[:30]:
             at = format_date(e.get("at")) or "—"
             actor = e.get("actor_label") or "—"
@@ -635,6 +697,15 @@ def _render_pdf_section(order: dict[str, Any]) -> None:
             key=f"dl_order_pdf_{order['id']}",
             use_container_width=True,
         )
+        from core.ui.mail import render_mail_link
+        body = (
+            f"Sehr geehrte Damen und Herren,\n\n"
+            f"anbei senden wir Ihnen unsere Auftragsbestätigung {nr}"
+            + (f" zu Ihrer Bestellung {order['customer_reference']}.\n\n"
+               if order.get("customer_reference") else " zur Verfügung.\n\n")
+            + "Mit freundlichen Grüßen\nWeber Trading & Service"
+        )
+        render_mail_link(to=None, subject=f"Auftragsbestätigung {nr}", body=body)
 
 
 # =====================================================================

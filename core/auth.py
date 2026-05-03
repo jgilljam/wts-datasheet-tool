@@ -26,7 +26,7 @@ def require_login() -> None:
         f"""
         <div class="wts-login-wrap">
           <img src="data:image/png;base64,{logo_b64()}" alt="WTS">
-          <h2>Datenblatt-Tool</h2>
+          <h2>WTS-Tool</h2>
           <div class="sub">Anmeldung für WTS-Mitarbeiter</div>
         </div>
         """,

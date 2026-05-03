@@ -197,6 +197,115 @@ def render_auftragsbestaetigung_pdf(order: dict[str, Any], items: list[dict[str,
 #  Bestellung (PO an Lieferant)
 # =====================================================================
 
+# =====================================================================
+#  Rechnung (Verkaufs-Rechnung an Kunden) + Storno-Variante
+# =====================================================================
+
+def render_rechnung_pdf(invoice: dict[str, Any], items: list[dict[str, Any]]) -> bytes:
+    """Rendert eine Rechnung als PDF.
+
+    Wenn `invoice.reverses_id` gesetzt ist, wird automatisch eine Stornorechnung
+    gerendert (Titel `Stornorechnung`, Verweis auf Original-Beleg-Nr im Footer-Hint).
+    """
+    from features.invoices import repo as inv_repo  # lazy import wg. cycle
+
+    customer = invoice.get("customer") or {}
+    shipping_addr = invoice.get("shipping_address") or invoice.get("billing_address")
+    rev_charge = bool(invoice.get("is_reverse_charge"))
+    is_storno = bool(invoice.get("reverses_id"))
+    reverses = invoice.get("reverses") or {}
+
+    company = inv_repo.get_company_settings()
+    totals = _build_totals(items, invoice)
+
+    # Beleg-Titel
+    if is_storno:
+        doc_label = "Stornorechnung"
+    else:
+        doc_label = "Rechnung"
+
+    # Footer-Hint: Zahlungsdetails + Reverse-Charge + Storno-Verweis
+    hint_parts = []
+    if is_storno:
+        orig_nr = reverses.get("invoice_number") or "?"
+        orig_date = _format_date(reverses.get("issued_at"))
+        hint_parts.append(
+            f"Diese Stornorechnung hebt die Rechnung {orig_nr} vom {orig_date} "
+            "vollständig auf. Grund: "
+            f"{invoice.get('cancellation_reason') or 'nicht angegeben'}."
+        )
+    else:
+        if invoice.get("due_date"):
+            hint_parts.append(f"Zahlbar bis {_format_date(invoice['due_date'])} ohne Abzug.")
+        if invoice.get("payment_terms_days"):
+            hint_parts.append(
+                f"Zahlungsziel: netto {invoice['payment_terms_days']} Tage."
+            )
+        if rev_charge:
+            hint_parts.append(
+                "Steuerschuldnerschaft des Leistungsempfängers (Reverse-Charge nach §13b UStG). "
+                "Nettorechnung."
+            )
+        if invoice.get("incoterms"):
+            place = f" {invoice.get('incoterms_place')}" if invoice.get("incoterms_place") else ""
+            hint_parts.append(f"Lieferung gemäß Incoterms 2020 {invoice['incoterms']}{place}.")
+
+    # Zahlungsdetails-Block (IBAN/BIC/Verwendungszweck)
+    payment_block_lines = []
+    if not is_storno:
+        if company.get("iban"):
+            payment_block_lines.append(f"IBAN: {company['iban']}")
+        if company.get("bic"):
+            payment_block_lines.append(f"BIC: {company['bic']}")
+        if company.get("bank_name"):
+            payment_block_lines.append(f"Bank: {company['bank_name']}")
+        if invoice.get("purpose_of_payment"):
+            payment_block_lines.append(f"Verwendungszweck: {invoice['purpose_of_payment']}")
+        elif invoice.get("invoice_number"):
+            payment_block_lines.append(f"Verwendungszweck: {invoice['invoice_number']}")
+
+    context = {
+        "logo_uri": _logo_uri(),
+        "doc_label": doc_label,
+        "doc_number": invoice.get("invoice_number") or "—",
+        "today": date.today().strftime("%d.%m.%Y"),
+        "doc_date": _format_date(invoice.get("issued_at")),
+        "doc_date_label": "Rechnungsdatum",
+        "due_date": _format_date(invoice.get("service_date")),
+        "due_date_label": "Leistungsdatum",
+        "reference": invoice.get("customer_reference"),
+        "reference_label": "Ihre Best.-Nr.",
+        "recipient_label": "Kunde",
+        "price_label": "Einzelpreis €",
+        "d": invoice,
+        "party": customer,
+        "shipping_addr": shipping_addr,
+        "dropship_note": "",
+        "reverse_charge": rev_charge,
+        "items": _build_items(items),
+        "footer_hint": " ".join(hint_parts) or None,
+        "payment_block_lines": payment_block_lines,
+        "company": company,
+        "show_signature": False,
+        **totals,
+    }
+
+    template = _jinja.get_template("beleg.html")
+    html_str = template.render(**context)
+    css_path = TEMPLATES_DIR / "beleg.css"
+    css = CSS(filename=str(css_path))
+
+    buf = BytesIO()
+    HTML(string=html_str, base_url=str(TEMPLATES_DIR)).write_pdf(
+        target=buf, stylesheets=[css],
+    )
+    return buf.getvalue()
+
+
+# =====================================================================
+#  Bestellung (PO an Lieferant)
+# =====================================================================
+
 def render_bestellung_pdf(po: dict[str, Any], items: list[dict[str, Any]]) -> bytes:
     """Rendert eine Bestellung als PDF (von WTS an Lieferanten).
 

@@ -229,6 +229,38 @@ h2 {
   color: #52525B;
 }
 
+.payment-block {
+  margin-top: 12pt;
+  padding: 10pt 12pt;
+  background: #DBEAFE;
+  border: 1px solid #93C5FD;
+  border-radius: 4pt;
+}
+.payment-block h2 {
+  color: #1E40AF;
+  border-bottom-color: #93C5FD;
+  margin-top: 0;
+}
+.payment-block .pay-line {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 8.5pt;
+  margin: 2pt 0;
+  color: #1E3A8A;
+}
+
+.company-footer {
+  margin-top: 16pt;
+  padding-top: 8pt;
+  border-top: 1px solid #E4E4E7;
+  font-size: 7pt;
+  color: #52525B;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  letter-spacing: 0.04em;
+  text-align: center;
+  line-height: 1.6;
+}
+.company-footer span:first-child { font-weight: 600; color: #0A2540; }
+
 /* Signatures */
 .signatures {
   display: flex;

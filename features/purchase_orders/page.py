@@ -10,6 +10,7 @@ import streamlit as st
 
 from core.branding import render_footer, render_header
 from core.db import supabase
+from core.ui.address_picker import render_address_picker
 from core.ui.kpi import render_kpis
 from core.ui.status import render_status_pill, render_status_stepper
 from core.utils import cents_to_eur, eur_to_cents, format_date, parse_date
@@ -199,6 +200,17 @@ def _render_create_tab() -> None:
         key="new_po_source_order",
     )
 
+    # Adress-Picker außerhalb der Form
+    real_supplier_id = party_id if party_id != NEW_PARTY_SENTINEL else None
+    shipping_addr_id = render_address_picker(
+        real_supplier_id, "new_po_ship", "Liefer-/Versandadresse Lieferant",
+        kinds=["shipping", "registered"],
+    )
+    billing_addr_id = render_address_picker(
+        real_supplier_id, "new_po_bill", "Rechnungsadresse Lieferant",
+        kinds=["billing", "registered"],
+    )
+
     with st.form("create_po", clear_on_submit=True):
         c1, c2 = st.columns(2)
         ordered_at = c1.date_input("Bestelldatum", value=date.today(), key="new_po_ordered_at")
@@ -247,6 +259,10 @@ def _render_create_tab() -> None:
             }
             if source_order_id != NEW_PARTY_SENTINEL:
                 payload["source_order_id"] = source_order_id
+            if shipping_addr_id:
+                payload["shipping_address_id"] = shipping_addr_id
+            if billing_addr_id:
+                payload["billing_address_id"] = billing_addr_id
             if supplier_reference.strip():
                 payload["supplier_reference"] = supplier_reference.strip()
             if incoterms != "—":
@@ -599,9 +615,10 @@ def _render_supplier_confirmation(p: dict[str, Any]) -> None:
 
 def _render_history(p: dict[str, Any]) -> None:
     events = repo.list_po_events(p["id"], limit=50)
-    if not events:
-        return
     with st.expander(f"🕒 Verlauf ({len(events)})", expanded=False):
+        if not events:
+            st.caption("Keine Ereignisse aufgezeichnet.")
+            return
         for e in events[:30]:
             at = format_date(e.get("at")) or "—"
             actor = e.get("actor_label") or "—"
@@ -715,6 +732,15 @@ def _render_pdf_section(po: dict[str, Any]) -> None:
             key=f"dl_po_pdf_{po['id']}",
             use_container_width=True,
         )
+        from core.ui.mail import render_mail_link
+        body = (
+            f"Sehr geehrte Damen und Herren,\n\n"
+            f"anbei unsere Bestellung {nr}. "
+            "Bitte senden Sie uns Ihre Auftragsbestätigung mit verbindlichem Liefertermin "
+            "an info@wts-trading.de.\n\n"
+            "Mit freundlichen Grüßen\nWeber Trading & Service"
+        )
+        render_mail_link(to=None, subject=f"Bestellung {nr}", body=body)
 
 
 # =====================================================================

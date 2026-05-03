@@ -134,6 +134,25 @@
 <section class="footer-hint">{{ footer_hint }}</section>
 {% endif %}
 
+{% if payment_block_lines %}
+<section class="payment-block">
+  <h2>Zahlungsdetails</h2>
+  {% for line in payment_block_lines %}
+  <div class="pay-line">{{ line }}</div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if company and (company.tax_number or company.vat_id or company.hr_register or company.managing_director) %}
+<section class="company-footer">
+  {% if company.legal_name %}<span>{{ company.legal_name }}</span>{% endif %}
+  {% if company.managing_director %}<span> · GF: {{ company.managing_director }}</span>{% endif %}
+  {% if company.hr_register %}<span> · {{ company.hr_register }}</span>{% endif %}
+  {% if company.tax_number %}<span> · Steuer-Nr: {{ company.tax_number }}</span>{% endif %}
+  {% if company.vat_id %}<span> · USt-IdNr: {{ company.vat_id }}</span>{% endif %}
+</section>
+{% endif %}
+
 {% if show_signature %}
 <section class="signatures">
   <div class="sig">

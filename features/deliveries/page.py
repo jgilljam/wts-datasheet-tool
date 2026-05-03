@@ -17,6 +17,7 @@ import streamlit as st
 
 from core.branding import render_footer, render_header
 from core.db import supabase
+from core.ui.address_picker import render_address_picker
 from core.ui.kpi import render_kpis
 from core.ui.status import render_status_stepper
 from core.utils import format_date as _format_date_util, parse_date
@@ -288,6 +289,16 @@ def _render_create_tab() -> None:
             key="new_related_po",
         )
 
+    # Adress-Picker außerhalb der Form
+    real_party_id_for_addr = (
+        party_id_raw if party_id_raw != NEW_PARTY_SENTINEL else None
+    )
+    shipping_addr_id_picked = render_address_picker(
+        real_party_id_for_addr, "new_delivery_ship",
+        "Lieferadresse" if direction == "outbound" else "Versandadresse Lieferant",
+        kinds=["shipping", "registered"],
+    )
+
     with st.form("create_delivery", clear_on_submit=True):
         c1, c2 = st.columns(2)
         expected_at = c1.date_input("Erwarteter Termin", value=date.today(), key="new_expected")
@@ -362,6 +373,8 @@ def _render_create_tab() -> None:
                 payload["related_order_id"] = related_order_id
             if direction == "inbound" and related_po_id != NEW_PARTY_SENTINEL:
                 payload["related_po_id"] = related_po_id
+            if shipping_addr_id_picked:
+                payload["shipping_address_id"] = shipping_addr_id_picked
 
             try:
                 new_id = service.create_delivery(payload)
