@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Lieferschein {{ d.delivery_number }}</title>
+  <link rel="stylesheet" href="lieferschein.css">
+</head>
+<body>
+
+<header class="page-header">
+  <img class="logo" src="{{ logo_uri }}" alt="WTS">
+  <div class="header-meta">
+    <div class="company">Weber Trading &amp; Service</div>
+    <div class="tagline">Industrial Trading · seit 1997</div>
+    <div class="company-addr">Kaiserstraße 35 · 41061 Mönchengladbach</div>
+  </div>
+</header>
+
+<section class="title-row">
+  <div>
+    <div class="eyebrow">{{ doc_label }}</div>
+    <h1>{{ d.delivery_number }}</h1>
+  </div>
+  <div class="meta-grid">
+    <div class="cell"><div class="label">Datum</div><div class="val">{{ today }}</div></div>
+    <div class="cell"><div class="label">Termin</div><div class="val">{{ termin or "—" }}</div></div>
+    {% if d.customer_reference %}
+    <div class="cell"><div class="label">Kunden-Ref.</div><div class="val">{{ d.customer_reference }}</div></div>
+    {% endif %}
+    {% if d.tracking_number %}
+    <div class="cell"><div class="label">Tracking</div><div class="val">{{ d.tracking_number }}</div></div>
+    {% endif %}
+    {% if d.shipping_method %}
+    <div class="cell"><div class="label">Methode</div><div class="val">{{ shipping_method_label }}</div></div>
+    {% endif %}
+    {% if d.incoterms %}
+    <div class="cell"><div class="label">Incoterms</div><div class="val">{{ d.incoterms }}{% if d.incoterms_place %} {{ d.incoterms_place }}{% endif %}</div></div>
+    {% endif %}
+  </div>
+</section>
+
+{% if dropshipping %}
+<section class="dropship-banner">
+  <strong>🚚 Streckengeschäft (Direktlieferung)</strong> — Lieferant <strong>{{ source_party.legal_name }}</strong>
+  liefert direkt an Kunden <strong>{{ party.legal_name }}</strong>.
+</section>
+{% endif %}
+
+<section class="parties">
+  <div class="party-card">
+    <div class="card-label">{{ recipient_label }}</div>
+    <div class="party-name">{{ party.legal_name or "—" }}</div>
+    {% if shipping_addr %}
+    <div class="addr">
+      {% if shipping_addr.label %}<div class="addr-label">{{ shipping_addr.label }}</div>{% endif %}
+      <div>{{ shipping_addr.street or "" }}{% if shipping_addr.street_2 %}, {{ shipping_addr.street_2 }}{% endif %}</div>
+      <div>{{ (shipping_addr.zip or "") }} {{ shipping_addr.city or "" }}</div>
+      <div>{{ shipping_addr.country_code or "" }}</div>
+    </div>
+    {% endif %}
+    {% if party.vat_id %}<div class="vat">USt-IdNr.: {{ party.vat_id }}</div>{% endif %}
+  </div>
+
+  {% if source_party %}
+  <div class="party-card">
+    <div class="card-label">Absender (Lieferant)</div>
+    <div class="party-name">{{ source_party.legal_name }}</div>
+    {% if source_party.vat_id %}<div class="vat">USt-IdNr.: {{ source_party.vat_id }}</div>{% endif %}
+  </div>
+  {% endif %}
+</section>
+
+<section class="items">
+  <h2>Positionen</h2>
+  {% if items %}
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th class="col-pos">Pos</th>
+        <th class="col-sku">SKU</th>
+        <th class="col-desc">Bezeichnung</th>
+        <th class="col-qty">Menge</th>
+        <th class="col-unit">Einheit</th>
+        <th class="col-batch">Charge / MHD</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+      <tr>
+        <td class="col-pos">{{ it.pos_nr }}</td>
+        <td class="col-sku mono">{{ it.sku or "" }}</td>
+        <td class="col-desc">
+          {{ it.title or it.description_override or "—" }}
+          {% if it.description_override and it.title %}<div class="sub">{{ it.description_override }}</div>{% endif %}
+          {% if it.adr_un_nr %}<div class="adr-mark">⚠ ADR {{ it.adr_un_nr }} · Klasse {{ it.adr_class or "?" }}</div>{% endif %}
+        </td>
+        <td class="col-qty num">{{ it.qty_display }}</td>
+        <td class="col-unit">{{ it.unit or "Stk" }}</td>
+        <td class="col-batch mono">{{ it.batch_lot or "" }}{% if it.mhd %} · MHD {{ it.mhd }}{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">Keine Positionen erfasst.</p>
+  {% endif %}
+</section>
+
+{% if pfand_total_eur > 0 %}
+<section class="block">
+  <h2>Pfand-Übersicht</h2>
+  <table class="kv-table">
+    {% for line in pfand_lines %}
+    <tr><td>{{ line.sku }}</td><td>{{ line.qty }} × {{ line.per_unit }} €</td><td class="num">{{ line.sum }} €</td></tr>
+    {% endfor %}
+    <tr class="total"><td colspan="2"><strong>Σ Pfand</strong></td><td class="num"><strong>{{ "%.2f"|format(pfand_total_eur) }} €</strong></td></tr>
+  </table>
+</section>
+{% endif %}
+
+{% if adr_lines %}
+<section class="block adr">
+  <h2>⚠ Gefahrgut (ADR-Übersicht)</h2>
+  <p class="hint">Aggregierte UN-Mengen für 1000-Punkte-Regel im Beförderungspapier.</p>
+  <table class="kv-table">
+    <thead>
+      <tr><th>UN-Nr.</th><th>Klasse</th><th>Menge</th><th class="num">kg netto</th><th>Eigenname</th></tr>
+    </thead>
+    <tbody>
+    {% for a in adr_lines %}
+    <tr>
+      <td class="mono">{{ a.un_nr }}</td>
+      <td>{{ a.cls }}</td>
+      <td>{{ a.qty }} Einheiten</td>
+      <td class="num">{{ a.kg }}</td>
+      <td>{{ a.proper_name }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
+{% if d.notes %}
+<section class="block">
+  <h2>Bemerkungen</h2>
+  <p>{{ d.notes }}</p>
+</section>
+{% endif %}
+
+<section class="signatures">
+  <div class="sig">
+    <div class="line"></div>
+    <div class="sig-label">Datum, Unterschrift Empfänger</div>
+  </div>
+  <div class="sig">
+    <div class="line"></div>
+    <div class="sig-label">Datum, Unterschrift WTS</div>
+  </div>
+</section>
+
+</body>
+</html>
