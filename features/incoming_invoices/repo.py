@@ -99,19 +99,27 @@ def find_supplier_by_vat_id(vat_id: str) -> dict[str, Any] | None:
 
 
 def find_supplier_by_name(name: str) -> dict[str, Any] | None:
-    """Fuzzy-Suche per ILIKE — gibt den ersten Treffer zurück."""
+    """Fuzzy-Suche per ILIKE — gibt den ersten Treffer zurück.
+
+    Fragt legal_name + short_name in zwei separaten Queries ab (statt or_()),
+    weil PostgREST-or-Syntax bei Kommata im Suchstring kollidiert.
+    """
     if not name or len(name.strip()) < 3:
         return None
-    res = (
-        supabase()
-        .table("parties")
-        .select("id, legal_name, short_name, type, vat_id")
-        .or_(f"legal_name.ilike.%{name.strip()}%,short_name.ilike.%{name.strip()}%")
-        .eq("type", "supplier")
-        .limit(1)
-        .execute()
-    )
-    return res.data[0] if res.data else None
+    n = name.strip()
+    sb = supabase()
+    for col in ("legal_name", "short_name"):
+        res = (
+            sb.table("parties")
+            .select("id, legal_name, short_name, type, vat_id")
+            .ilike(col, f"%{n}%")
+            .eq("type", "supplier")
+            .limit(1)
+            .execute()
+        )
+        if res.data:
+            return res.data[0]
+    return None
 
 
 def find_article_by_sku(sku: str) -> dict[str, Any] | None:
