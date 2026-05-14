@@ -155,6 +155,14 @@ def _render_topbar() -> None:
             new_total = sum(
                 r.get("new", 0) for r in results.values() if isinstance(r, dict)
             )
+            nl_total = sum(
+                r.get("newsletters_filtered", 0)
+                for r in results.values() if isinstance(r, dict)
+            )
+            sent_total = sum(
+                (r.get("sent") or {}).get("new", 0)
+                for r in results.values() if isinstance(r, dict)
+            )
             converted = sum(
                 1
                 for r in results.values()
@@ -166,6 +174,10 @@ def _render_topbar() -> None:
                 st.toast(f"📥 {new_total} neue Mail{'s' if new_total != 1 else ''}", icon="✅")
             else:
                 st.toast("Keine neuen Mails", icon="ℹ️")
+            if nl_total:
+                st.toast(f"🗑️ {nl_total} Newsletter gefiltert", icon="ℹ️")
+            if sent_total:
+                st.toast(f"📤 {sent_total} versendete Mail{'s' if sent_total != 1 else ''}", icon="✅")
             if converted:
                 st.toast(f"⚡ {converted} Belege auto-converted", icon="✨")
             st.rerun()
@@ -178,8 +190,8 @@ def _render_topbar() -> None:
 
     if not (sales_ok or invoice_ok or info_ok):
         st.info(
-            "ℹ️ IMAP-Login fehlt — trag IMAP_SALES_USER/PASSWORD und "
-            "IMAP_INVOICE_USER/PASSWORD in `.streamlit/secrets.toml` ein."
+            "ℹ️ IMAP-Login fehlt — trag IMAP_INFO_USER + IMAP_INFO_PASSWORD "
+            "in `.streamlit/secrets.toml` ein (alle Geschäftspost läuft über info@)."
         )
 
     if st.session_state.get("inbox_auto_refresh"):

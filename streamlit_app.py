@@ -28,6 +28,7 @@ from features import (
     settings,
     stock,
     users,
+    vorgaenge,
 )
 
 
@@ -43,6 +44,7 @@ require_login()
 
 pages_map = {
     "dashboard": st.Page(dashboard.render, title="Dashboard", icon="🏠", url_path="dashboard", default=True),
+    "vorgaenge": st.Page(vorgaenge.render, title="Vorgänge", icon="🗂️", url_path="vorgaenge"),
     "quotations": st.Page(quotations.render, title="Angebote", icon="📨", url_path="angebote"),
     "orders": st.Page(orders.render, title="Aufträge", icon="📑", url_path="auftraege"),
     "purchase_orders": st.Page(purchase_orders.render, title="Bestellungen", icon="🛒", url_path="bestellungen"),
@@ -67,7 +69,7 @@ st.session_state["__wts_pages"] = pages_map
 # {Section-Header: [pages]} und rendert die Section-Header als getrennte
 # Gruppen in der Sidebar.
 sidebar_groups = {
-    "Übersicht": [pages_map["dashboard"]],
+    "Übersicht": [pages_map["dashboard"], pages_map["vorgaenge"]],
     "Verkauf": [
         pages_map["quotations"],
         pages_map["orders"],
