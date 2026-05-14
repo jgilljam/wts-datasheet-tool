@@ -115,7 +115,7 @@ def list_vorgaenge(
     out_invs = (
         sb.table("invoices")
         .select(
-            "id, invoice_number, status, invoice_date, due_date, "
+            "id, invoice_number, status, issued_at, service_date, due_date, "
             "currency, total_net_cents, "
             "pdf_storage_path, related_order_id"
         )
