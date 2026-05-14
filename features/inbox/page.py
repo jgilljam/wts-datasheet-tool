@@ -133,7 +133,7 @@ def _set_status(mail_id: str, status: str) -> None:
 def _render_topbar() -> None:
     info_ok = imap_inbox.has_credentials("info")
 
-    c1, c2, c3 = st.columns([3, 1, 1])
+    c1, c2, c3, c4 = st.columns([3, 1, 1, 1])
     with c1:
         st.text_input(
             "🔍",
@@ -142,14 +142,28 @@ def _render_topbar() -> None:
             label_visibility="collapsed",
         )
     with c2:
-        if st.button(
-            "📥 Mails abrufen",
+        do_pull_new = st.button(
+            "📥 Neue Mails",
             type="primary",
             use_container_width=True,
             disabled=not info_ok,
-        ):
-            with st.spinner("IMAP + KI läuft …"):
-                results = imap_inbox.pull_all_mailboxes()
+            help="Pullt nur ungelesene Mails (täglicher Use)",
+        )
+    with c3:
+        do_pull_backfill = st.button(
+            "📚 Backfill 90 Tage",
+            use_container_width=True,
+            disabled=not info_ok,
+            help="Pullt ALLE Mails der letzten 90 Tage (auch gelesene). Idempotent — kein Duplikat-Risiko.",
+        )
+    if do_pull_new or do_pull_backfill:
+        backfill_days = 90 if do_pull_backfill else 0
+        spinner_label = (
+            "Backfill 90 Tage läuft (kann etwas dauern, Gemini pro Mail) …"
+            if do_pull_backfill else "IMAP + KI läuft …"
+        )
+        with st.spinner(spinner_label):
+            results = imap_inbox.pull_all_mailboxes(backfill_days=backfill_days)
             new_total = sum(
                 r.get("new", 0) for r in results.values() if isinstance(r, dict)
             )
@@ -179,7 +193,7 @@ def _render_topbar() -> None:
             if converted:
                 st.toast(f"⚡ {converted} Belege auto-converted", icon="✨")
             st.rerun()
-    with c3:
+    with c4:
         st.toggle(
             "⏱ Auto",
             key="inbox_auto_refresh",
@@ -360,49 +374,53 @@ def _render_detail(mail_id: str) -> None:
 
     st.divider()
 
-    # === Inhalt + Anhänge nebeneinander ===
-    c_body, c_side = st.columns([3, 2])
-    with c_body:
-        st.markdown("#### 📄 Inhalt")
-        body = mail_row.get("body_text") or _html_to_text(mail_row.get("body_html") or "")
-        st.text_area(
-            "body",
-            value=body or "(leer)",
-            height=320,
-            label_visibility="collapsed",
-            disabled=True,
-            key=f"body_{mail_id}",
-        )
+    # === Inhalt + Anhänge vertikal gestapelt (Mail-Client-Stil) ===
+    st.markdown("#### 📄 Inhalt")
+    body = mail_row.get("body_text") or _html_to_text(mail_row.get("body_html") or "")
+    st.text_area(
+        "body",
+        value=body or "(leer)",
+        height=280,
+        label_visibility="collapsed",
+        disabled=True,
+        key=f"body_{mail_id}",
+    )
 
-    with c_side:
-        atts = mail_row.get("attachments_meta") or []
+    atts = mail_row.get("attachments_meta") or []
+    if atts:
         st.markdown(f"#### 📎 Anhänge ({len(atts)})")
-        if not atts:
-            st.caption("Keine Anhänge.")
         for att in atts:
             with st.container(border=True):
-                st.markdown(f"**{att.get('filename') or '?'}**")
-                size_kb = (att.get("size_bytes") or 0) // 1024
-                st.caption(f"{att.get('content_type', '?')} · {size_kb} KB")
-                if att.get("storage_path"):
-                    if st.button(
-                        "⬇ Download",
-                        key=f"loadatt_{mail_id}_{att['storage_path']}",
-                        use_container_width=True,
-                    ):
-                        st.session_state[f"att_data_{att['storage_path']}"] = (
-                            supabase().storage.from_(imap_inbox.ATTACHMENTS_BUCKET).download(att["storage_path"])
-                        )
-                    data = st.session_state.get(f"att_data_{att['storage_path']}")
-                    if data:
-                        st.download_button(
-                            "💾 Speichern",
-                            data=data,
-                            file_name=att["filename"],
-                            mime=att.get("content_type") or "application/octet-stream",
-                            key=f"dlbtn_{mail_id}_{att['storage_path']}",
-                            use_container_width=True,
-                        )
+                a1, a2 = st.columns([3, 2])
+                with a1:
+                    st.markdown(f"**{att.get('filename') or '?'}**")
+                    size_kb = (att.get("size_bytes") or 0) // 1024
+                    st.caption(f"{att.get('content_type', '?')} · {size_kb} KB")
+                with a2:
+                    if att.get("storage_path"):
+                        # Direkt-Download: Bytes werden bei Render geladen,
+                        # damit ein Klick reicht (statt 2-Klick "Download + Speichern")
+                        cache_key = f"att_data_{att['storage_path']}"
+                        if cache_key not in st.session_state:
+                            try:
+                                st.session_state[cache_key] = (
+                                    supabase().storage
+                                    .from_(imap_inbox.ATTACHMENTS_BUCKET)
+                                    .download(att["storage_path"])
+                                )
+                            except Exception as e:
+                                st.session_state[cache_key] = None
+                                st.caption(f"⚠️ Lade-Fehler: {str(e)[:50]}")
+                        data = st.session_state.get(cache_key)
+                        if data:
+                            st.download_button(
+                                "⬇ Download",
+                                data=data,
+                                file_name=att["filename"],
+                                mime=att.get("content_type") or "application/octet-stream",
+                                key=f"dlbtn_{mail_id}_{att['storage_path']}",
+                                use_container_width=True,
+                            )
 
     # === Thread (wenn Replies vorhanden) ===
     thread = _list_thread(mail_row.get("thread_id") or "")
@@ -708,9 +726,19 @@ def render() -> None:
     st.divider()
 
     filter_kwargs = _render_filter_tabs()
-    selected_id = _render_mail_list(filter_kwargs)
-    if selected_id:
-        st.divider()
-        _render_detail(selected_id)
+
+    # 2-Spalten-Layout wie ein klassischer Mail-Client:
+    # - Links: Mail-Liste (kompakter)
+    # - Rechts: Detail-View der ausgewählten Mail
+    col_list, col_detail = st.columns([2, 3], gap="medium")
+
+    with col_list:
+        selected_id = _render_mail_list(filter_kwargs)
+
+    with col_detail:
+        if selected_id:
+            _render_detail(selected_id)
+        else:
+            st.info("👈 Wähle eine Mail aus der Liste links.")
 
     render_footer()

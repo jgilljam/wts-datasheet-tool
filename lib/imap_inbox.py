@@ -303,12 +303,14 @@ def pull_mailbox(
     mark_seen: bool = True,
     folder: str = "INBOX",
     run_pipeline: bool = True,
+    backfill_days: int = 0,
 ) -> dict[str, Any]:
-    """Holt UNSEEN-Mails, persistiert sie in `incoming_mails`.
+    """Holt Mails aus einem IMAP-Folder und persistiert sie in `incoming_mails`.
 
     Args:
-        run_pipeline: nach Insert sofort mail_pipeline.process_new_mail aufrufen
-                      (Auto-Klassifikation + ggf. Auto-Convert).
+        backfill_days: Wenn >0, werden ALLE Mails der letzten N Tage gepullt
+                       (auch bereits gelesene). Default 0 = nur UNSEEN.
+        run_pipeline: nach Insert sofort mail_pipeline.process_new_mail aufrufen.
 
     Returns: dict mit {fetched, new, duplicates, errors, pipeline_results}.
     """
@@ -320,7 +322,13 @@ def pull_mailbox(
     try:
         M.login(user, password)
         M.select(folder)
-        typ, data = M.search(None, "UNSEEN")
+        if backfill_days > 0:
+            since_date = (
+                datetime.now(timezone.utc) - timedelta(days=backfill_days)
+            ).strftime("%d-%b-%Y")
+            typ, data = M.search(None, f'(SINCE "{since_date}")')
+        else:
+            typ, data = M.search(None, "UNSEEN")
         if typ != "OK":
             raise RuntimeError(f"IMAP SEARCH fehlgeschlagen: {typ}")
         uids = (data[0] or b"").split()
@@ -638,23 +646,31 @@ def pull_sent_folder(
             pass
 
 
-def pull_all_mailboxes() -> dict[str, dict[str, Any]]:
+def pull_all_mailboxes(backfill_days: int = 0) -> dict[str, dict[str, Any]]:
     """Pollt info@ Inbox + Sent-Folder.
 
-    sales@ / invoice@ werden bewusst NICHT mehr gepullt — die kriegen
-    nur Auto-Forwards von info@ als Notification-Kopien für Julian.
+    Args:
+        backfill_days: 0 = nur UNSEEN (täglicher Pull). >0 = alle Mails
+                       der letzten N Tage (Initial-Import / Lücken-Fill).
+
+    sales@ / invoice@ werden bewusst NICHT gepullt — die kriegen nur
+    Auto-Forwards von info@ als Notification-Kopien für Julian.
     Forward-Mails haben eine andere Message-ID als das Original,
     deshalb würde der Idempotenz-Check Duplikate erlauben.
-
-    Die alten IMAP_SALES_* / IMAP_INVOICE_* Secrets können aus
-    Streamlit Cloud entfernt werden — sie werden ignoriert.
     """
     results: dict[str, dict[str, Any]] = {}
     if not has_credentials("info"):
         results["info"] = {"skipped": "IMAP_INFO_USER/PASSWORD fehlen"}
         return results
+    # Bei Backfill: Limit hochsetzen (sonst werden nur die letzten 50 Mails geholt)
+    pull_limit = 500 if backfill_days > 0 else 50
     try:
-        inbox_res = pull_mailbox("info", run_pipeline=True)
+        inbox_res = pull_mailbox(
+            "info",
+            run_pipeline=True,
+            limit=pull_limit,
+            backfill_days=backfill_days,
+        )
     except Exception as e:
         inbox_res = {"error": str(e)[:300]}
     try:
