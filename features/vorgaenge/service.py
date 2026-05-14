@@ -1,4 +1,4 @@
-"""Vorgangs-Aggregation — sammelt pro Auftrag alle verknüpften Belege + Mails.
+"""Vorgangs-Aggregation + Wartung (Sent-Mail-Rematch).
 
 Ein "Vorgang" ist die Klammer um einen Kunden-Auftrag (orders) und alle
 daran hängenden Belege:
@@ -237,6 +237,33 @@ def list_vorgaenge(
             },
         })
     return out
+
+
+def rematch_all_unlinked_sent_mails() -> dict[str, int]:
+    """Wartung: alle outgoing_mails ohne linked_beleg_id durch das Stufe-1-
+    Matching schicken. Nützlich nach Deploy einer neuen Matching-Logik
+    oder wenn alte Pulls noch unverlinkt sind.
+    """
+    from lib import mail_to_beleg
+    sb = supabase()
+    rows = (
+        sb.table("outgoing_mails")
+        .select("id")
+        .eq("source", "imap_pull")
+        .is_("linked_beleg_id", "null")
+        .limit(2000)
+        .execute().data
+    ) or []
+    linked = 0
+    failed = 0
+    for r in rows:
+        try:
+            res = mail_to_beleg.link_outgoing_mail(outgoing_mail_id=r["id"])
+            if res.get("linked"):
+                linked += 1
+        except Exception:
+            failed += 1
+    return {"processed": len(rows), "linked": linked, "failed": failed}
 
 
 def collect_pdf_paths(vorgang: dict[str, Any]) -> list[dict[str, Any]]:

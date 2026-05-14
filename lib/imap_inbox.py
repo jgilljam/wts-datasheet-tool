@@ -623,8 +623,17 @@ def pull_sent_folder(
                     "status": "imap_received",
                     # beleg_type / beleg_id bleiben null bis Klassifikation
                 }
-                supabase().table("outgoing_mails").insert(payload).execute()
+                ins = supabase().table("outgoing_mails").insert(payload).execute()
+                new_mail_id = ins.data[0]["id"] if ins.data else None
                 new += 1
+
+                # Stufe-1-Matching: Beleg-Nummer im Body suchen + verlinken
+                if new_mail_id:
+                    try:
+                        from . import mail_to_beleg
+                        mail_to_beleg.link_outgoing_mail(outgoing_mail_id=new_mail_id)
+                    except Exception:
+                        pass  # Best-effort — Mail bleibt unverlinkt, kann später
             except Exception:
                 errors += 1
 

@@ -222,7 +222,22 @@ def render() -> None:
 
     # ----- Schnell-Buttons (MÜSSEN vor den date_inputs stehen, sonst greift
     # der reset nicht im selben Run) -----
-    qb1, qb2, qb3, qb4, _ = st.columns([1, 1, 1, 1, 5])
+    qb1, qb2, qb3, qb4, _, qb_match = st.columns([1, 1, 1, 1, 4, 2])
+
+    if qb_match.button(
+        "🔄 Sent-Mails matchen",
+        use_container_width=True,
+        help="Geht alle versendeten Mails durch und sucht in Subject+Body "
+             "nach Auftragsnummern (AB/RE/BE), um sie mit Belegen zu verlinken.",
+    ):
+        with st.spinner("Matching läuft …"):
+            stats = service.rematch_all_unlinked_sent_mails()
+        st.toast(
+            f"✅ {stats['linked']} von {stats['processed']} Sent-Mails verlinkt"
+            + (f" · {stats['failed']} Fehler" if stats.get("failed") else ""),
+            icon="🔗",
+        )
+        st.rerun()
 
     def _apply_quick(d_from: date, d_to: date) -> None:
         st.session_state["_vg_default_from"] = d_from

@@ -516,6 +516,33 @@ def convert_mail_to_order(
 # ============================================================
 
 _PO_NUMBER_RE = re.compile(r"\bBE[\s\-]?(\d{4})[\s\-]?(\d{4})\b", re.IGNORECASE)
+_ORDER_NUMBER_RE = re.compile(r"\bAB[\s\-]?(\d{4})[\s\-]?(\d{4})\b", re.IGNORECASE)
+_INVOICE_NUMBER_RE = re.compile(r"\bRE[\s\-]?(\d{4})[\s\-]?(\d{4})\b", re.IGNORECASE)
+_DELIVERY_NUMBER_RE = re.compile(r"\bL[\s\-]?(\d{4})[\s\-]?(\d{4})\b", re.IGNORECASE)
+
+
+def find_order_in_text(text: str) -> str | None:
+    """Sucht eine AB-Nr (AB-YYYY-NNNN) in Text."""
+    if not text:
+        return None
+    m = _ORDER_NUMBER_RE.search(text)
+    return f"AB-{m.group(1)}-{m.group(2)}" if m else None
+
+
+def find_invoice_in_text(text: str) -> str | None:
+    """Sucht eine RE-Nr (RE-YYYY-NNNN) in Text."""
+    if not text:
+        return None
+    m = _INVOICE_NUMBER_RE.search(text)
+    return f"RE-{m.group(1)}-{m.group(2)}" if m else None
+
+
+def find_delivery_in_text(text: str) -> str | None:
+    """Sucht eine L-Nr (L-YYYY-NNNN) in Text."""
+    if not text:
+        return None
+    m = _DELIVERY_NUMBER_RE.search(text)
+    return f"L-{m.group(1)}-{m.group(2)}" if m else None
 
 
 def find_po_in_text(text: str) -> str | None:
@@ -571,6 +598,136 @@ def link_po_acknowledgment(
     }).eq("id", mail_id).execute()
 
     return {"linked": True, "po_id": po_id, "po_number": po_number}
+
+
+# ============================================================
+# Outgoing-Mail-Matching (Sent-Folder → Belege)
+# ============================================================
+
+# Subject-Keywords für outgoing-Klassifikation (lowercase Substring-Match).
+# Reihenfolge = Prio (erste Match gewinnt) — Stornorechnung vor Rechnung etc.
+_OUTGOING_CATEGORY_HINTS = [
+    ("outgoing_dunning",       ("mahnung", "zahlungserinnerung", "dunning")),
+    ("outgoing_quotation",     ("angebot", "quote", "offer", "preisanfrage")),
+    ("outgoing_purchase_order", ("bestellung bei", "purchase order", "order to")),
+    ("outgoing_invoice",       ("rechnung", "invoice", "stornorechnung")),
+    ("outgoing_delivery",      ("lieferschein", "delivery note", "packing slip")),
+    ("outgoing_reply",         ("re:", "aw:", "antw:")),
+]
+
+
+def classify_outgoing_subject(subject: str | None) -> tuple[str, str]:
+    """Heuristische Klassifikation einer rausgehenden Mail nach Subject.
+
+    Returns: (category, confidence). category aus dem ai_category-Check
+    in db/0024_outgoing_mails_imap.sql. confidence aus {high, medium, low}.
+    """
+    s = (subject or "").lower()
+    if not s:
+        return "outgoing_other", "low"
+    for cat, hints in _OUTGOING_CATEGORY_HINTS:
+        if any(h in s for h in hints):
+            # Confidence: high wenn Beleg-Pattern + Keyword, sonst medium
+            return cat, "medium"
+    return "outgoing_other", "low"
+
+
+def link_outgoing_mail(
+    *,
+    outgoing_mail_id: str,
+    actor_email: str | None = None,
+) -> dict[str, Any]:
+    """Klassifiziert + verknüpft eine IMAP-gepullte Sent-Mail mit einem Beleg.
+
+    Stufe 1 Matching:
+    - Sucht in subject + body_text nach Beleg-Nummer-Pattern (AB/RE/BE/L)
+    - Prio: AB-Nr (Auftrag) > RE-Nr (Tool-Rechnung) > BE-Nr (Bestellung) > L-Nr
+    - Setzt linked_beleg_type + linked_beleg_id + ai_category + status
+
+    Bei mehreren Treffern wird die erste gefundene Auftragsnummer verwendet,
+    weil der Auftrag der Hauptanker für die Vorgangs-Übersicht ist.
+
+    Returns: {linked, category, beleg_type?, beleg_number?, reason?}.
+    """
+    sb = supabase()
+    mail = (
+        sb.table("outgoing_mails")
+        .select("id, subject, body_text, body_preview, body_html")
+        .eq("id", outgoing_mail_id).maybe_single().execute().data
+    )
+    if not mail:
+        return {"linked": False, "reason": "mail not found"}
+
+    haystack = " ".join([
+        mail.get("subject") or "",
+        mail.get("body_text") or mail.get("body_preview") or "",
+    ])
+
+    # Klassifikation aus Subject
+    category, confidence = classify_outgoing_subject(mail.get("subject"))
+
+    # Beleg-Suche — Auftrag hat Vorrang, dann Tool-Rechnung, dann Bestellung
+    order_no = find_order_in_text(haystack)
+    invoice_no = find_invoice_in_text(haystack) if not order_no else None
+    po_no = find_po_in_text(haystack) if not (order_no or invoice_no) else None
+
+    base_update: dict[str, Any] = {
+        "ai_category": category,
+        "ai_confidence": confidence,
+        "ai_processed_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    linked_beleg_type = linked_beleg_id = None
+    matched_no = None
+
+    if order_no:
+        row = (
+            sb.table("orders").select("id, order_number")
+            .eq("order_number", order_no).limit(1).execute().data
+        )
+        if row:
+            linked_beleg_type = "order"
+            linked_beleg_id = row[0]["id"]
+            matched_no = order_no
+    if not linked_beleg_id and invoice_no:
+        row = (
+            sb.table("invoices").select("id, invoice_number")
+            .eq("invoice_number", invoice_no).limit(1).execute().data
+        )
+        if row:
+            linked_beleg_type = "invoice"
+            linked_beleg_id = row[0]["id"]
+            matched_no = invoice_no
+    if not linked_beleg_id and po_no:
+        row = (
+            sb.table("purchase_orders").select("id, po_number")
+            .eq("po_number", po_no).limit(1).execute().data
+        )
+        if row:
+            linked_beleg_type = "purchase_order"
+            linked_beleg_id = row[0]["id"]
+            matched_no = po_no
+
+    if linked_beleg_id:
+        base_update.update({
+            "linked_beleg_type": linked_beleg_type,
+            "linked_beleg_id": linked_beleg_id,
+            "linked_at": datetime.now(timezone.utc).isoformat(),
+            "linked_by": actor_email,
+            "status": "imap_linked",
+        })
+    else:
+        base_update["status"] = "imap_classified"
+
+    sb.table("outgoing_mails").update(base_update).eq("id", outgoing_mail_id).execute()
+
+    return {
+        "linked": bool(linked_beleg_id),
+        "category": category,
+        "beleg_type": linked_beleg_type,
+        "beleg_number": matched_no,
+        "reason": None if linked_beleg_id else "no matching beleg number found",
+    }
 
 
 def convert_mail_to_incoming_invoice(
