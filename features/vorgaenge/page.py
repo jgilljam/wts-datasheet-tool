@@ -215,19 +215,51 @@ def render() -> None:
     today = date.today()
     first_of_month = today.replace(day=1)
 
+    # Default-Werte (überschreibbar via Quick-Buttons unten — die löschen die
+    # Widget-States vor dem Render, damit value= greift).
+    default_from = st.session_state.get("_vg_default_from", first_of_month)
+    default_to = st.session_state.get("_vg_default_to", today)
+
+    # ----- Schnell-Buttons (MÜSSEN vor den date_inputs stehen, sonst greift
+    # der reset nicht im selben Run) -----
+    qb1, qb2, qb3, qb4, _ = st.columns([1, 1, 1, 1, 5])
+
+    def _apply_quick(d_from: date, d_to: date) -> None:
+        st.session_state["_vg_default_from"] = d_from
+        st.session_state["_vg_default_to"] = d_to
+        # Widget-State löschen, damit value= beim Re-Render greift
+        st.session_state.pop("vorgaenge_date_from", None)
+        st.session_state.pop("vorgaenge_date_to", None)
+
+    if qb1.button("Akt. Monat", use_container_width=True):
+        _apply_quick(first_of_month, today)
+        st.rerun()
+    if qb2.button("Letzt. Monat", use_container_width=True):
+        last_month_end = first_of_month - timedelta(days=1)
+        last_month_start = last_month_end.replace(day=1)
+        _apply_quick(last_month_start, last_month_end)
+        st.rerun()
+    if qb3.button("Akt. Quartal", use_container_width=True):
+        q_start_month = ((today.month - 1) // 3) * 3 + 1
+        _apply_quick(today.replace(month=q_start_month, day=1), today)
+        st.rerun()
+    if qb4.button("Akt. Jahr", use_container_width=True):
+        _apply_quick(today.replace(month=1, day=1), today)
+        st.rerun()
+
     # ----- Filter-Bar -----
     f1, f2, f3, f4 = st.columns([2, 2, 2, 3])
     with f1:
         date_from = st.date_input(
             "Von",
-            value=first_of_month,
+            value=default_from,
             format="DD.MM.YYYY",
             key="vorgaenge_date_from",
         )
     with f2:
         date_to = st.date_input(
             "Bis",
-            value=today,
+            value=default_to,
             format="DD.MM.YYYY",
             key="vorgaenge_date_to",
         )
@@ -245,28 +277,6 @@ def render() -> None:
             key="vorgaenge_search",
             label_visibility="collapsed",
         )
-
-    # Schnell-Buttons für gängige Zeiträume
-    qb1, qb2, qb3, qb4, _ = st.columns([1, 1, 1, 1, 5])
-    if qb1.button("Akt. Monat", use_container_width=True):
-        st.session_state["vorgaenge_date_from"] = first_of_month
-        st.session_state["vorgaenge_date_to"] = today
-        st.rerun()
-    if qb2.button("Letzt. Monat", use_container_width=True):
-        last_month_end = first_of_month - timedelta(days=1)
-        last_month_start = last_month_end.replace(day=1)
-        st.session_state["vorgaenge_date_from"] = last_month_start
-        st.session_state["vorgaenge_date_to"] = last_month_end
-        st.rerun()
-    if qb3.button("Akt. Quartal", use_container_width=True):
-        q_start_month = ((today.month - 1) // 3) * 3 + 1
-        st.session_state["vorgaenge_date_from"] = today.replace(month=q_start_month, day=1)
-        st.session_state["vorgaenge_date_to"] = today
-        st.rerun()
-    if qb4.button("Akt. Jahr", use_container_width=True):
-        st.session_state["vorgaenge_date_from"] = today.replace(month=1, day=1)
-        st.session_state["vorgaenge_date_to"] = today
-        st.rerun()
 
     # ----- Daten laden -----
     try:
