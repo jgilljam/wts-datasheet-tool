@@ -152,7 +152,8 @@ def list_vorgaenge(
     deliveries = (
         sb.table("deliveries")
         .select(
-            "id, delivery_number, status, issued_at, shipped_at, delivered_at, "
+            "id, delivery_number, status, ordered_at, expected_at, "
+            "shipped_at, arrived_at, "
             "pdf_storage_path, related_order_id"
         )
         .in_("related_order_id", order_ids)
