@@ -639,34 +639,27 @@ def pull_sent_folder(
 
 
 def pull_all_mailboxes() -> dict[str, dict[str, Any]]:
-    """Pollt alle konfigurierten Postfächer (Inbox + Sent).
+    """Pollt info@ Inbox + Sent-Folder.
 
-    Primärquelle ist info@ (alle Geschäftspost läuft faktisch dort ein).
-    Newsletter werden in pull_mailbox() bereits vor DB-Insert gefiltert,
-    daher kann info@ direkt durch die KI-Pipeline.
+    sales@ / invoice@ werden bewusst NICHT mehr gepullt — die kriegen
+    nur Auto-Forwards von info@ als Notification-Kopien für Julian.
+    Forward-Mails haben eine andere Message-ID als das Original,
+    deshalb würde der Idempotenz-Check Duplikate erlauben.
 
-    Für info@ wird zusätzlich der Sent-Folder gepullt (→ outgoing_mails),
-    um versendete Rechnungen + Bestellungen zu erfassen.
-
-    sales@ / invoice@ werden nur gepullt wenn deren Secrets noch gesetzt
-    sind (Backwards-Compat während Migration). Können nach Cut entfernt
-    werden.
+    Die alten IMAP_SALES_* / IMAP_INVOICE_* Secrets können aus
+    Streamlit Cloud entfernt werden — sie werden ignoriert.
     """
     results: dict[str, dict[str, Any]] = {}
-    for mb in ("info", "sales", "invoice"):
-        if not has_credentials(mb):
-            results[mb] = {"skipped": "no credentials"}
-            continue
-        try:
-            inbox_res = pull_mailbox(mb, run_pipeline=True)
-        except Exception as e:
-            inbox_res = {"error": str(e)[:300]}
-        # Sent-Pull nur für info@ — sales@/invoice@ sind reine Empfangs-Postfächer
-        if mb == "info":
-            try:
-                sent_res = pull_sent_folder(mb)
-                inbox_res["sent"] = sent_res
-            except Exception as e:
-                inbox_res["sent"] = {"error": str(e)[:300]}
-        results[mb] = inbox_res
+    if not has_credentials("info"):
+        results["info"] = {"skipped": "IMAP_INFO_USER/PASSWORD fehlen"}
+        return results
+    try:
+        inbox_res = pull_mailbox("info", run_pipeline=True)
+    except Exception as e:
+        inbox_res = {"error": str(e)[:300]}
+    try:
+        inbox_res["sent"] = pull_sent_folder("info")
+    except Exception as e:
+        inbox_res["sent"] = {"error": str(e)[:300]}
+    results["info"] = inbox_res
     return results

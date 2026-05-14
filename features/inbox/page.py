@@ -131,8 +131,6 @@ def _set_status(mail_id: str, status: str) -> None:
 # ============================================================
 
 def _render_topbar() -> None:
-    sales_ok = imap_inbox.has_credentials("sales")
-    invoice_ok = imap_inbox.has_credentials("invoice")
     info_ok = imap_inbox.has_credentials("info")
 
     c1, c2, c3 = st.columns([3, 1, 1])
@@ -148,7 +146,7 @@ def _render_topbar() -> None:
             "📥 Mails abrufen",
             type="primary",
             use_container_width=True,
-            disabled=not (sales_ok or invoice_ok or info_ok),
+            disabled=not info_ok,
         ):
             with st.spinner("IMAP + KI läuft …"):
                 results = imap_inbox.pull_all_mailboxes()
@@ -188,10 +186,10 @@ def _render_topbar() -> None:
             help="Alle 60 sec automatisch pullen.",
         )
 
-    if not (sales_ok or invoice_ok or info_ok):
+    if not info_ok:
         st.info(
             "ℹ️ IMAP-Login fehlt — trag IMAP_INFO_USER + IMAP_INFO_PASSWORD "
-            "in `.streamlit/secrets.toml` ein (alle Geschäftspost läuft über info@)."
+            "in Streamlit Cloud Secrets ein (alle Geschäftspost läuft über info@)."
         )
 
     if st.session_state.get("inbox_auto_refresh"):
