@@ -701,7 +701,7 @@ def _trigger_ai(mail_row: dict[str, Any]) -> None:
 def render() -> None:
     render_header(
         title="Posteingang",
-        subtitle="Mails aus sales@ + invoice@ + info@ — KI klassifiziert automatisch.",
+        subtitle="Mails aus info@ — Newsletter werden gefiltert, KI klassifiziert automatisch.",
     )
 
     _render_topbar()
